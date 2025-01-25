@@ -179,7 +179,7 @@ void AGame::killEnemies(int entityId) {
 void AGame::killBullets(int entityId) {
     for (auto it = bullets.begin(); it != bullets.end();) {
         if (it->getEntity() == entityId) {
-            registry.kill_entity(it->getEntity());
+            //registry.kill_entity(it->getEntity()); to check not working because of vectors
             it = bullets.erase(it);
             std::string data = std::to_string(entityId + 200) + ";0;0";
             m_server->Broadcast(m_server->createPacket(Network::PacketType::DELETE, data));
@@ -220,7 +220,7 @@ void AGame::moveBullets() {
         if (newX > maxX) {
             killBullets(i);
         } else {
-            bullets[i].move(newX, y);
+            bullets[i].move(1.0f, 0.0f);
         }
     }
     m_server->bulletPacketFactory();

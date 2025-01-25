@@ -19,6 +19,7 @@ void GameState::initializeplayers(int numPlayers) {
 void GameState::update() {
     registry.run_systems();
     processPlayerActions();
+    moveBullets();
 }
 
 void GameState::run(int numPlayers) {
