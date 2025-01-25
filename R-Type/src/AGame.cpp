@@ -210,3 +210,18 @@ void AGame::killEntity(int entityId) {
     killBullets(entityId);
     killBosses(entityId);
 }
+
+void AGame::moveBullets() {
+    const float maxX = 800.0f;
+    for (int i = 0; i < bullets.size(); ++i) {
+        auto [x, y] = getBulletPosition(i);
+        std::cout << "Bullet " << i << " at " << x << ", " << y << std::endl;
+        float newX = x + 1.0f;
+        if (newX > maxX) {
+            killBullets(i);
+        } else {
+            bullets[i].move(newX, y);
+        }
+    }
+    m_server->bulletPacketFactory();
+}

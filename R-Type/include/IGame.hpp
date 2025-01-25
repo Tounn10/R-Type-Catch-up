@@ -37,6 +37,7 @@ public:
     virtual std::pair<float, float> getBulletPosition(int bulletId) const = 0;
     virtual std::pair<float, float> getEnemyPosition(int enemyId) const = 0;
     virtual std::pair<float, float> getBossPosition(int enemyId) const = 0;
+    virtual void moveBullets() = 0; 
 
     // Functions for managing player actions
     virtual void addPlayerAction(int playerId, int actionId) = 0;

@@ -75,6 +75,7 @@ class AGame : public IGame {
         void killEntity(int entityId) override;
 
         void registerComponents();
+        void moveBullets() override;
 };
 
 #endif // AGAME_HPP

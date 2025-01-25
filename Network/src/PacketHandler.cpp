@@ -126,7 +126,7 @@ void PacketHandler::handlePlayerJoin(const Network::Packet &packet)
 
 void PacketHandler::handlePlayerShoot(const Network::Packet &packet)
 {
-    // std::lock_guard<std::mutex> lock(m_mutex);
+    std::lock_guard<std::mutex> lock(m_mutex);
     std::cout << "[PacketHandler] Handeled PLAYER_SHOOT packet." << std::endl;
     const auto& clients = m_server.getClients();
     const udp::endpoint& clientEndpoint = m_server.getRemoteEndpoint();
@@ -144,7 +144,7 @@ void PacketHandler::handlePlayerShoot(const Network::Packet &packet)
             }
         }
     } if (found) {
-        m_game.spawnBullet(playerId);
+        handlePlayerAction(packet, 5);
     } else {
         std::cerr << "[PacketHandler] Client endpoint not found in client list." << std::endl;
     }
