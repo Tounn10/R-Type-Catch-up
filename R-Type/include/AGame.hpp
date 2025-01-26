@@ -74,6 +74,7 @@ class AGame : public IGame {
         void spawnBoss(int boosId, float x, float y) override;
         void spawnPlayer(int playerId, float x, float y) override;
         void spawnBullet(int playerId) override;
+        void spawnEnemyBullet(int enemyId) override;
         void killBosses(int entityId) override;
         void killBullets(int entityId) override;
         void killEnemies(int entityId) override;
@@ -82,6 +83,7 @@ class AGame : public IGame {
 
         void registerComponents();
         void moveBullets() override;
+        void moveEnemies() override;
         void checkBulletEnemyCollisions() override;
 };
 

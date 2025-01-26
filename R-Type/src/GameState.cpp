@@ -21,6 +21,7 @@ void GameState::update() {
     processPlayerActions();
     moveBullets();
     checkBulletEnemyCollisions();
+    moveEnemies();
 }
 
 void GameState::run(int numPlayers) {

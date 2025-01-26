@@ -33,6 +33,7 @@ public:
     virtual void spawnPlayer(int playerId, float x, float y) = 0;
     virtual void spawnEnemy(int enemyId, float x, float y) = 0;
     virtual void spawnBullet(int playerId) = 0;
+    virtual void spawnEnemyBullet(int enemyId) = 0;
     virtual void spawnBoss(int bossId, float x, float y) = 0;
     virtual size_t getPlayerCount() const = 0;
     virtual size_t getEnemiesCount() const = 0;
@@ -47,6 +48,7 @@ public:
     virtual std::map<int, Bullet>& getBullets() = 0;
     virtual std::map<int, Boss>& getBosses() = 0;
     virtual void moveBullets() = 0;
+    virtual void moveEnemies() = 0;
     virtual void checkBulletEnemyCollisions() = 0;
 
     // Functions for managing player actions

@@ -171,6 +171,23 @@ void AGame::spawnBullet(int playerId) {
     }
 }
 
+void AGame::spawnEnemyBullet(int enemyId) {
+    auto it = enemies.find(enemyId);
+    if (it != enemies.end()) {
+        auto entity = it->second.getEntity();
+        if (it->second.getRegistry().has_component<Position>(entity)) {
+            const auto& position = it->second.getRegistry().get_components<Position>()[entity];
+            int bulletId = bullets.size(); // Generate a new bullet ID
+            bullets.emplace(bulletId, Bullet(registry, position->x - 50.0f, position->y + 25.0f, -1.0f));
+
+            std::string data = std::to_string(bulletId + 200) + ";" + std::to_string(position->x - 50.0f) + ";" + std::to_string(position->y + 25.0f);
+            m_server->Broadcast(m_server->createPacket(Network::PacketType::CREATE_BULLET, data));
+        } else {
+            std::cerr << "Error: Enemy " << enemyId << " does not have a Position component." << std::endl;
+        }
+    }
+}
+
 void AGame::killPlayers(int entityId) {
     auto it = players.find(entityId);
     if (it != players.end()) {
@@ -252,4 +269,30 @@ void AGame::checkBulletEnemyCollisions() {
         }
     }
     m_server->enemyPacketFactory();
+}
+
+void AGame::moveEnemies() {
+    static int direction = 0;
+    const float moveDistance = 1.0f;
+
+    std::map<int, Enemy> temp_enemies = enemies;
+    for (auto& [id, enemy] : temp_enemies) {
+        float x = 0.0f;
+        float y = 0.0f;
+
+        switch (direction) {
+            case 0: y = -moveDistance; break;
+            case 1: x = -moveDistance; break;
+            case 2: y = moveDistance; break;
+            case 3: x = moveDistance; break;
+        }
+
+        //enemies.find(id)->second.move(x, y); Works but heavy in packets will implement it with new system
+
+        if (rand() % 100 < 0.1) {
+            //spawnEnemyBullet(id); Check for another type of bullets to avoid killing enneimes by their own bullets
+        }
+    }
+
+    direction = (direction + 1) % 4;
 }
