@@ -12,6 +12,11 @@
 #include <utility>
 #include <cstddef>
 #include "PlayerAction.hpp"
+#include "Player.hpp"
+#include "Enemy.hpp"
+#include "Bullet.hpp"
+#include "Boss.hpp"
+#include <map>
 
 class IGame {
 public:
@@ -37,6 +42,10 @@ public:
     virtual std::pair<float, float> getBulletPosition(int bulletId) const = 0;
     virtual std::pair<float, float> getEnemyPosition(int enemyId) const = 0;
     virtual std::pair<float, float> getBossPosition(int enemyId) const = 0;
+    virtual std::map<int, Player>& getPlayers() = 0;
+    virtual std::map<int, Enemy>& getEnemies() = 0;
+    virtual std::map<int, Bullet>& getBullets() = 0;
+    virtual std::map<int, Boss>& getBosses() = 0;
     virtual void moveBullets() = 0; 
 
     // Functions for managing player actions

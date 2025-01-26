@@ -39,10 +39,10 @@ namespace RType {
 class AGame : public IGame {
     protected:
         std::vector<PlayerAction> playerActions; // Shared player action system
-        std::vector<Player> players;
-        std::vector<Enemy> enemies;
-        std::vector<Bullet> bullets;
-        std::vector<Boss> bosses;
+        std::map<int, Player> players;
+        std::map<int, Enemy> enemies;
+        std::map<int, Bullet> bullets;
+        std::map<int, Boss> bosses;
         Registry registry;
         RType::Server* m_server;
         std::mutex playerActionsMutex;
@@ -62,6 +62,12 @@ class AGame : public IGame {
         std::pair<float, float> getBulletPosition(int bulletId) const override;
         std::pair<float, float> getEnemyPosition(int enemyId) const override;
         std::pair<float, float> getBossPosition(int enemyId) const override;
+
+        // Public getter methods for maps of players, enemies, bullets and bosses
+        std::map<int, Player>& getPlayers() override;
+        std::map<int, Enemy>& getEnemies() override;
+        std::map<int, Bullet>& getBullets() override;
+        std::map<int, Boss>& getBosses() override;
 
         // Implement entity spawn and delete management functions
         void spawnEnemy(int enemyId, float x, float y) override;

@@ -33,6 +33,7 @@ RType::Server::~Server()
 void RType::Server::setGameState(GameState* game) {
     m_game = game;
 }
+
 //SEND MESSAGES
 
 void RType::Server::send_to_client(const std::string& message, const udp::endpoint& client_endpoint)
@@ -115,7 +116,7 @@ std::string RType::Server::createPacket(const Network::PacketType& type, const s
 
     packet_str.push_back(static_cast<uint8_t>(type));
     packet_str.push_back(static_cast<uint8_t>(';'));
-    for (char c : packet_data) {
+    for (char c : packet_data) {   
         packet_str.push_back(static_cast<uint8_t>(c));
     }
     return packet_str;
@@ -196,7 +197,7 @@ bool RType::Server::hasPositionChanged(int id, float x, float y, std::unordered_
 void RType::Server::playerPacketFactory() {
     static std::unordered_map<int, std::pair<float, float>> lastKnownPositions;
 
-    for (int playerId = 0; playerId < m_game->getPlayerCount(); ++playerId) {
+    for (const auto& [playerId, player] : m_game->getPlayers()) {
         try {
             auto [x, y] = m_game->getPlayerPosition(playerId);
             if (hasPositionChanged(playerId, x, y, lastKnownPositions)) {
@@ -212,7 +213,7 @@ void RType::Server::playerPacketFactory() {
 void RType::Server::enemyPacketFactory() {
     static std::unordered_map<int, std::pair<float, float>> lastKnownPositions;
 
-    for (int enemyId = 0; enemyId < m_game->getEnemiesCount(); ++enemyId) {
+    for (const auto& [enemyId, enemy] : m_game->getEnemies()) {
         try {
             auto [x, y] = m_game->getEnemyPosition(enemyId);
             if (hasPositionChanged(enemyId, x, y, lastKnownPositions)) {
@@ -228,7 +229,7 @@ void RType::Server::enemyPacketFactory() {
 void RType::Server::bulletPacketFactory() {
     static std::unordered_map<int, std::pair<float, float>> lastKnownPositions;
 
-    for (int bulletId = 0; bulletId < m_game->getBulletsCount(); ++bulletId) {
+    for (const auto& [bulletId, bullet] : m_game->getBullets()) {
         try {
             auto [x, y] = m_game->getBulletPosition(bulletId);
             if (hasPositionChanged(bulletId, x, y, lastKnownPositions)) {
@@ -244,7 +245,7 @@ void RType::Server::bulletPacketFactory() {
 void RType::Server::bossPacketFactory() {
     static std::unordered_map<int, std::pair<float, float>> lastKnownPositions;
 
-    for (int bossId = 0; bossId < m_game->getBossCount(); ++bossId) {
+    for (const auto& [bossId, boss] : m_game->getBosses()) {
         try {
             auto [x, y] = m_game->getBossPosition(bossId);
             if (hasPositionChanged(bossId, x, y, lastKnownPositions)) {

@@ -43,7 +43,7 @@ void GameState::run(int numPlayers) {
         }
 
         //Sleep for a short duration to simulate frame time
-        //std::this_thread::sleep_for(std::chrono::milliseconds(16));
+        std::this_thread::sleep_for(std::chrono::milliseconds(16));
     }
 }
 
@@ -61,7 +61,12 @@ void GameState::handlePlayerMove(int playerId, int actionId) {
     } else if (actionId == 4) { // Down
         y = moveDistance;
     }
-    players[playerId].move(x, y);
+    auto it = players.find(playerId);
+    if (it != players.end()) {
+        it->second.move(x, y);
+    } else {
+        std::cerr << "[ERROR] Player ID " << playerId << " not found." << std::endl;
+    }
 }
 
 bool GameState::isBossSpawned() const {
@@ -76,22 +81,22 @@ void GameState::startNextWave() {
     currentWave++;
     enemiesPerWave += 5; // Increase the number of enemies per wave
     for (int i = 0; i < enemiesPerWave; ++i) {
-        spawnEnemy(i, distX(rng), distY(rng));
+        spawnEnemy(nextEnemyId++, distX(rng), distY(rng));
     }
 }
 
 const Registry& GameState::getEntityRegistry(Registry::Entity entity) { // Check entity type and get the corresponding registry
-    auto playerIt = std::find_if(players.begin(), players.end(), [entity](const auto& p) { return p.getEntity() == entity; });
-    if (playerIt != players.end()) return playerIt->getRegistry();
+    auto playerIt = std::find_if(players.begin(), players.end(), [entity](const auto& p) { return p.second.getEntity() == entity; });
+    if (playerIt != players.end()) return playerIt->second.getRegistry();
 
-    auto enemyIt = std::find_if(enemies.begin(), enemies.end(), [entity](const auto& e) { return e.getEntity() == entity; });
-    if (enemyIt != enemies.end()) return enemyIt->getRegistry();
+    auto enemyIt = std::find_if(enemies.begin(), enemies.end(), [entity](const auto& e) { return e.second.getEntity() == entity; });
+    if (enemyIt != enemies.end()) return enemyIt->second.getRegistry();
 
-    auto bulletIt = std::find_if(bullets.begin(), bullets.end(), [entity](const auto& b) { return b.getEntity() == entity; });
-    if (bulletIt != bullets.end()) return bulletIt->getRegistry();
+    auto bulletIt = std::find_if(bullets.begin(), bullets.end(), [entity](const auto& b) { return b.second.getEntity() == entity; });
+    if (bulletIt != bullets.end()) return bulletIt->second.getRegistry();
 
-    auto bossIt = std::find_if(bosses.begin(), bosses.end(), [entity](const auto& b) { return b.getEntity() == entity; });
-    if (bossIt != bosses.end()) return bossIt->getRegistry();
+    auto bossIt = std::find_if(bosses.begin(), bosses.end(), [entity](const auto& b) { return b.second.getEntity() == entity; });
+    if (bossIt != bosses.end()) return bossIt->second.getRegistry();
 
     std::cerr << "Error: Entity not found in any registry.";
     throw std::runtime_error("Entity not found in any registry."); //avoid compilation warning even though it will never be reached
@@ -116,7 +121,6 @@ void GameState::checkAndKillEntities(Registry::Entity entity1, Registry::Entity 
     }
 }
 
-
 void GameState::checkCollisions() {
     for (const auto& [entity1, entity2] : collision_system(
         registry,
@@ -131,9 +135,9 @@ void GameState::checkCollisions() {
         bool isPlayer1 = registry.has_component<Controllable>(entity1);
         bool isPlayer2 = registry.has_component<Controllable>(entity2);
         bool isEnemy1 = std::find_if(enemies.begin(), enemies.end(),
-            [entity1](auto& e){ return e.getEntity() == entity1; }) != enemies.end();
+            [entity1](auto& e){ return e.second.getEntity() == entity1; }) != enemies.end();
         bool isEnemy2 = std::find_if(enemies.begin(), enemies.end(),
-            [entity2](auto& e){ return e.getEntity() == entity2; }) != enemies.end();
+            [entity2](auto& e){ return e.second.getEntity() == entity2; }) != enemies.end();
 
         // Projectile <-> Enemy
         if (isProjectile1 && isEnemy2) {

@@ -24,6 +24,7 @@ AGame::~AGame()
     players.clear();
     enemies.clear();
     bullets.clear();
+    bosses.clear();
 }
 
 void AGame::registerComponents()
@@ -74,50 +75,54 @@ const std::vector<PlayerAction>& AGame::getPlayerActions() const {
 }
 
 std::pair<float, float> AGame::getPlayerPosition(int playerId) const {
-    if (playerId < 0 || playerId >= players.size()) {
+    auto it = players.find(playerId);
+    if (it == players.end()) {
         throw std::out_of_range("Invalid player ID");
     }
 
-    const auto& positionComponent = players[playerId].getRegistry().get_components<Position>()[players[playerId].getEntity()];
+    const auto& positionComponent = it->second.getRegistry().get_components<Position>()[it->second.getEntity()];
     return {positionComponent->x, positionComponent->y};
 }
 
 std::pair<float, float> AGame::getEnemyPosition(int enemyId) const {
-    if (enemyId < 0 || enemyId >= enemies.size()) {
+    auto it = enemies.find(enemyId);
+    if (it == enemies.end()) {
         throw std::out_of_range("Invalid enemy ID");
     }
 
-    const auto& positionComponent = enemies[enemyId].getRegistry().get_components<Position>()[enemies[enemyId].getEntity()];
+    const auto& positionComponent = it->second.getRegistry().get_components<Position>()[it->second.getEntity()];
     return {positionComponent->x, positionComponent->y};
 }
 
 std::pair<float, float> AGame::getBulletPosition(int bulletId) const {
-    if (bulletId < 0 || bulletId >= bullets.size()) {
+    auto it = bullets.find(bulletId);
+    if (it == bullets.end()) {
         throw std::out_of_range("Invalid bullet ID");
     }
 
-    const auto& positionComponent = bullets[bulletId].getRegistry().get_components<Position>()[bullets[bulletId].getEntity()];
+    const auto& positionComponent = it->second.getRegistry().get_components<Position>()[it->second.getEntity()];
     return {positionComponent->x, positionComponent->y};
 }
 
 std::pair<float, float> AGame::getBossPosition(int bossId) const {
-    if (bossId < 0 || bossId >= bosses.size()) {
+    auto it = bosses.find(bossId);
+    if (it == bosses.end()) {
         throw std::out_of_range("Invalid boss ID");
     }
 
-    const auto& positionComponent = bosses[bossId].getRegistry().get_components<Position>()[bosses[bossId].getEntity()];
+    const auto& positionComponent = it->second.getRegistry().get_components<Position>()[it->second.getEntity()];
     return {positionComponent->x, positionComponent->y};
 }
 
 void AGame::spawnEnemy(int enemyId, float x, float y) {
-    enemies.emplace_back(registry, x, y);
+    enemies.emplace(enemyId, Enemy(registry, x, y));
 
     std::string data = std::to_string(enemyId + 500) + ";" + std::to_string(x) + ";" + std::to_string(y);
     m_server->Broadcast(m_server->createPacket(Network::PacketType::CREATE_ENEMY, data));
 }
 
 void AGame::spawnBoss(int bossId, float x, float y) {
-    bosses.emplace_back(registry, x, y);
+    bosses.emplace(bossId, Boss(registry, x, y));
 
     std::string data = std::to_string(bossId + 900) + ";" + std::to_string(x) + ";" + std::to_string(y);
     m_server->Broadcast(m_server->createPacket(Network::PacketType::CREATE_BOSS, data));
@@ -125,7 +130,7 @@ void AGame::spawnBoss(int bossId, float x, float y) {
 
 void AGame::spawnPlayer(int playerId, float x, float y) {
     if (playerId >= 0 && playerId < 4) {
-        players.emplace_back(registry, x, y);
+        players.emplace(playerId, Player(registry, x, y));
 
         std::string data = std::to_string(playerId) + ";" + std::to_string(x) + ";" + std::to_string(y);
         std::cout << "Player " << playerId << " spawned at " << x << ", " << y << std::endl;
@@ -134,13 +139,15 @@ void AGame::spawnPlayer(int playerId, float x, float y) {
 }
 
 void AGame::spawnBullet(int playerId) {
-    if (playerId < players.size()) {
-        auto entity = players[playerId].getEntity();
-        if (players[playerId].getRegistry().has_component<Position>(entity)) {
-            const auto& position = players[playerId].getRegistry().get_components<Position>()[entity];
-            bullets.emplace_back(registry, position->x + 50.0f, position->y + 25.0f, 1.0f);
+    auto it = players.find(playerId);
+    if (it != players.end()) {
+        auto entity = it->second.getEntity();
+        if (it->second.getRegistry().has_component<Position>(entity)) {
+            const auto& position = it->second.getRegistry().get_components<Position>()[entity];
+            int bulletId = bullets.size(); // Generate a new bullet ID
+            bullets.emplace(bulletId, Bullet(registry, position->x + 50.0f, position->y + 25.0f, 1.0f));
 
-            std::string data = std::to_string((bullets.size() - 1) + 200) + ";" + std::to_string(position->x + 50.0f) + ";" + std::to_string(position->y + 25.0f);
+            std::string data = std::to_string(bulletId + 200) + ";" + std::to_string(position->x + 50.0f) + ";" + std::to_string(position->y + 25.0f);
             m_server->Broadcast(m_server->createPacket(Network::PacketType::CREATE_BULLET, data));
         } else {
             std::cerr << "Error: Player " << playerId << " does not have a Position component." << std::endl;
@@ -149,58 +156,42 @@ void AGame::spawnBullet(int playerId) {
 }
 
 void AGame::killPlayers(int entityId) {
-    for (auto it = players.begin(); it != players.end();) {
-        if (it->getEntity() == entityId) {
-            registry.kill_entity(it->getEntity());
-            it = players.erase(it);
-            std::string data = std::to_string(entityId) + ";0;0";
-            m_server->Broadcast(m_server->createPacket(Network::PacketType::DELETE, data));
-            break;
-        } else {
-            ++it;
-        }
+    auto it = players.find(entityId);
+    if (it != players.end()) {
+        it->second.getRegistry().kill_entity(it->second.getEntity());
+        players.erase(it);
+        std::string data = std::to_string(entityId) + ";0;0";
+        m_server->Broadcast(m_server->createPacket(Network::PacketType::DELETE, data));
     }
 }
 
 void AGame::killEnemies(int entityId) {
-    for (auto it = enemies.begin(); it != enemies.end();) {
-        if (it->getEntity() == entityId) {
-            registry.kill_entity(it->getEntity());
-            it = enemies.erase(it);
-            std::string data = std::to_string(entityId + 500) + ";0;0";
-            m_server->Broadcast(m_server->createPacket(Network::PacketType::DELETE, data));
-            break;
-        } else {
-            ++it;
-        }
+    auto it = enemies.find(entityId);
+    if (it != enemies.end()) {
+        it->second.getRegistry().kill_entity(it->second.getEntity());
+        enemies.erase(it);
+        std::string data = std::to_string(entityId + 500) + ";0;0";
+        m_server->Broadcast(m_server->createPacket(Network::PacketType::DELETE, data));
     }
 }
 
 void AGame::killBullets(int entityId) {
-    for (auto it = bullets.begin(); it != bullets.end();) {
-        if (it->getEntity() == entityId) {
-            //registry.kill_entity(it->getEntity()); to check not working because of vectors
-            it = bullets.erase(it);
-            std::string data = std::to_string(entityId + 200) + ";0;0";
-            m_server->Broadcast(m_server->createPacket(Network::PacketType::DELETE, data));
-            break;
-        } else {
-            ++it;
-        }
+    auto it = bullets.find(entityId);
+    if (it != bullets.end()) {
+        it->second.getRegistry().kill_entity(it->second.getEntity());
+        bullets.erase(it);
+        std::string data = std::to_string(entityId + 200) + ";0;0";
+        m_server->Broadcast(m_server->createPacket(Network::PacketType::DELETE, data));
     }
 }
 
 void AGame::killBosses(int entityId) {
-    for (auto it = bosses.begin(); it != bosses.end();) {
-        if (it->getEntity() == entityId) {
-            registry.kill_entity(it->getEntity());
-            it = bosses.erase(it);
-            std::string data = std::to_string(entityId + 900) + ";0;0";
-            m_server->Broadcast(m_server->createPacket(Network::PacketType::DELETE, data));
-            break;
-        } else {
-            ++it;
-        }
+    auto it = bosses.find(entityId);
+    if (it != bosses.end()) {
+        it->second.getRegistry().kill_entity(it->second.getEntity());
+        bosses.erase(it);
+        std::string data = std::to_string(entityId + 900) + ";0;0";
+        m_server->Broadcast(m_server->createPacket(Network::PacketType::DELETE, data));
     }
 }
 
@@ -213,15 +204,32 @@ void AGame::killEntity(int entityId) {
 
 void AGame::moveBullets() {
     const float maxX = 800.0f;
-    for (int i = 0; i < bullets.size(); ++i) {
-        auto [x, y] = getBulletPosition(i);
-        std::cout << "Bullet " << i << " at " << x << ", " << y << std::endl;
+    
+    std::map <int, Bullet> temp_bullets = bullets;
+    for (auto& [id, bullet] : temp_bullets) {
+        auto [x, y] = getBulletPosition(id);
         float newX = x + 1.0f;
         if (newX > maxX) {
-            killBullets(i);
+            killBullets(id);
         } else {
-            bullets[i].move(1.0f, 0.0f);
+            bullets.find(id)->second.move(1.0f, 0.0f);
         }
     }
     m_server->bulletPacketFactory();
+}
+
+std::map<int, Player>& AGame::getPlayers() {
+    return players;
+}
+
+std::map<int, Enemy>& AGame::getEnemies() {
+    return enemies;
+}
+
+std::map<int, Bullet>& AGame::getBullets() {
+    return bullets;
+}
+
+std::map<int, Boss>& AGame::getBosses() {
+    return bosses;
 }
