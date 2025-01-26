@@ -45,6 +45,10 @@ const Registry& Player::getRegistry() const {
     return registry;
 }
 
+Registry& Player::getRegistry() {
+    return registry;
+}
+
 void Player::setRegistry(const Registry& newRegistry) {
     registry = newRegistry;
 }

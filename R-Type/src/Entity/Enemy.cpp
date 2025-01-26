@@ -41,6 +41,10 @@ const Registry& Enemy::getRegistry() const {
     return registry;
 }
 
+Registry& Enemy::getRegistry() {
+    return registry;
+}
+
 void Enemy::setRegistry(const Registry& newRegistry) {
     registry = newRegistry;
 }

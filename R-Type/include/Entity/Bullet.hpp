@@ -11,7 +11,8 @@ public:
     void move(float x, float y);
     Registry::Entity getEntity() const;
 
-    const Registry& getRegistry() const; 
+    const Registry& getRegistry() const;
+    Registry& getRegistry();
     void setRegistry(const Registry& newRegistry);
 
 private:

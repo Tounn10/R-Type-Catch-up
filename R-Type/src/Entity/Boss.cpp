@@ -43,6 +43,10 @@ const Registry& Boss::getRegistry() const {
     return registry;
 }
 
+Registry& Boss::getRegistry() {
+    return registry;
+}
+
 void Boss::setRegistry(const Registry& newRegistry) {
     registry = newRegistry;
 }

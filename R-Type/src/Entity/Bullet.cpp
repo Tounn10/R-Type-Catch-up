@@ -42,6 +42,10 @@ const Registry& Bullet::getRegistry() const {
     return registry;
 }
 
+Registry& Bullet::getRegistry() {
+    return registry;
+}
+
 void Bullet::setRegistry(const Registry& newRegistry) {
     registry = newRegistry;
 }
