@@ -46,7 +46,8 @@ public:
     virtual std::map<int, Enemy>& getEnemies() = 0;
     virtual std::map<int, Bullet>& getBullets() = 0;
     virtual std::map<int, Boss>& getBosses() = 0;
-    virtual void moveBullets() = 0; 
+    virtual void moveBullets() = 0;
+    virtual void checkBulletEnemyCollisions() = 0;
 
     // Functions for managing player actions
     virtual void addPlayerAction(int playerId, int actionId) = 0;

@@ -34,8 +34,6 @@ private:
     int enemiesPerWave;
     std::chrono::steady_clock::time_point lastSpawnTime; 
 
-    void checkAndKillEntities(Registry::Entity entity1, Registry::Entity entity2);
-    const Registry& getEntityRegistry(Registry::Entity entity);
     void spawnEnemiesRandomly();
     RType::Server* m_server; // Pointer to RType::Server
     int nextEnemyId;

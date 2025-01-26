@@ -27,6 +27,22 @@ AGame::~AGame()
     bosses.clear();
 }
 
+std::map<int, Player>& AGame::getPlayers() {
+    return players;
+}
+
+std::map<int, Enemy>& AGame::getEnemies() {
+    return enemies;
+}
+
+std::map<int, Bullet>& AGame::getBullets() {
+    return bullets;
+}
+
+std::map<int, Boss>& AGame::getBosses() {
+    return bosses;
+}
+
 void AGame::registerComponents()
 {
     registry.register_component<Position>();
@@ -218,18 +234,22 @@ void AGame::moveBullets() {
     m_server->bulletPacketFactory();
 }
 
-std::map<int, Player>& AGame::getPlayers() {
-    return players;
-}
+void AGame::checkBulletEnemyCollisions() {
+    std::map<int, Bullet> temp_bullets = bullets;
+    std::map<int, Enemy> temp_enemies = enemies;
 
-std::map<int, Enemy>& AGame::getEnemies() {
-    return enemies;
-}
+    for (const auto& [bulletId, bullet] : temp_bullets) {
+        auto [bulletX, bulletY] = getBulletPosition(bulletId);
+        for (const auto& [enemyId, enemy] : temp_enemies) {
+            auto [enemyX, enemyY] = getEnemyPosition(enemyId);
+            float distance = std::sqrt(std::pow(enemyX - bulletX, 2) + std::pow(enemyY - bulletY, 2));
+            float collisionThreshold = 30.0f;
 
-std::map<int, Bullet>& AGame::getBullets() {
-    return bullets;
-}
-
-std::map<int, Boss>& AGame::getBosses() {
-    return bosses;
+            if (distance < collisionThreshold) {
+                killBullets(bulletId);
+                killEnemies(enemyId);
+            }
+        }
+    }
+    m_server->enemyPacketFactory();
 }

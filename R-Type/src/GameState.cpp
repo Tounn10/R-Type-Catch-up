@@ -20,6 +20,7 @@ void GameState::update() {
     registry.run_systems();
     processPlayerActions();
     moveBullets();
+    checkBulletEnemyCollisions();
 }
 
 void GameState::run(int numPlayers) {
@@ -82,42 +83,6 @@ void GameState::startNextWave() {
     enemiesPerWave += 5; // Increase the number of enemies per wave
     for (int i = 0; i < enemiesPerWave; ++i) {
         spawnEnemy(nextEnemyId++, distX(rng), distY(rng));
-    }
-}
-
-const Registry& GameState::getEntityRegistry(Registry::Entity entity) { // Check entity type and get the corresponding registry
-    auto playerIt = std::find_if(players.begin(), players.end(), [entity](const auto& p) { return p.second.getEntity() == entity; });
-    if (playerIt != players.end()) return playerIt->second.getRegistry();
-
-    auto enemyIt = std::find_if(enemies.begin(), enemies.end(), [entity](const auto& e) { return e.second.getEntity() == entity; });
-    if (enemyIt != enemies.end()) return enemyIt->second.getRegistry();
-
-    auto bulletIt = std::find_if(bullets.begin(), bullets.end(), [entity](const auto& b) { return b.second.getEntity() == entity; });
-    if (bulletIt != bullets.end()) return bulletIt->second.getRegistry();
-
-    auto bossIt = std::find_if(bosses.begin(), bosses.end(), [entity](const auto& b) { return b.second.getEntity() == entity; });
-    if (bossIt != bosses.end()) return bossIt->second.getRegistry();
-
-    std::cerr << "Error: Entity not found in any registry.";
-    throw std::runtime_error("Entity not found in any registry."); //avoid compilation warning even though it will never be reached
-}
-
-void GameState::checkAndKillEntities(Registry::Entity entity1, Registry::Entity entity2) { //New collision function to replace the one right under
-    // Get registries for both entities using the function above
-    const Registry& registry1 = getEntityRegistry(entity1);
-    const Registry& registry2 = getEntityRegistry(entity2);
-
-    if (registry1.has_component<Position>(entity1) && registry2.has_component<Position>(entity2)) {
-        const auto& pos1 = registry1.get_components<Position>()[entity1];
-        const auto& pos2 = registry2.get_components<Position>()[entity2];
-
-        float distance = std::sqrt(std::pow(pos2->x - pos1->x, 2) + std::pow(pos2->y - pos1->y, 2));
-        float collisionThreshold = 30.0f;
-
-        if (distance < collisionThreshold) {
-            killEntity(entity1);
-            killEntity(entity2);
-        }
     }
 }
 

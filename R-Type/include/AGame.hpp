@@ -82,6 +82,7 @@ class AGame : public IGame {
 
         void registerComponents();
         void moveBullets() override;
+        void checkBulletEnemyCollisions() override;
 };
 
 #endif // AGAME_HPP
