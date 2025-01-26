@@ -36,7 +36,6 @@ private:
 
     void checkAndKillEntities(Registry::Entity entity1, Registry::Entity entity2);
     const Registry& getEntityRegistry(Registry::Entity entity);
-    void checkCollisions();
     void spawnEnemiesRandomly();
     RType::Server* m_server; // Pointer to RType::Server
     int nextEnemyId;

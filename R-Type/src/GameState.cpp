@@ -121,42 +121,6 @@ void GameState::checkAndKillEntities(Registry::Entity entity1, Registry::Entity 
     }
 }
 
-void GameState::checkCollisions() {
-    for (const auto& [entity1, entity2] : collision_system(
-        registry,
-        registry.get_components<Position>(),
-        registry.get_components<Drawable>(),
-        registry.get_components<Collidable>(),
-        registry.get_components<Controllable>(),
-        registry.get_components<Projectile>()
-    )) {
-        bool isProjectile1 = registry.has_component<Projectile>(entity1);
-        bool isProjectile2 = registry.has_component<Projectile>(entity2);
-        bool isPlayer1 = registry.has_component<Controllable>(entity1);
-        bool isPlayer2 = registry.has_component<Controllable>(entity2);
-        bool isEnemy1 = std::find_if(enemies.begin(), enemies.end(),
-            [entity1](auto& e){ return e.second.getEntity() == entity1; }) != enemies.end();
-        bool isEnemy2 = std::find_if(enemies.begin(), enemies.end(),
-            [entity2](auto& e){ return e.second.getEntity() == entity2; }) != enemies.end();
-
-        // Projectile <-> Enemy
-        if (isProjectile1 && isEnemy2) {
-            registry.kill_entity(entity1);
-            registry.kill_entity(entity2);
-        } else if (isProjectile2 && isEnemy1) {
-            registry.kill_entity(entity1);
-            registry.kill_entity(entity2);
-        }
-
-        // Player <-> Enemy
-        if (isPlayer1 && isEnemy2) {
-            registry.kill_entity(entity1);
-        } else if (isPlayer2 && isEnemy1) {
-            registry.kill_entity(entity2);
-        }
-    }
-}
-
 void GameState::spawnEnemiesRandomly() {
     auto now = std::chrono::steady_clock::now();
     auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastSpawnTime).count();
