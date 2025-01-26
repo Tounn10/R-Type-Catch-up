@@ -193,7 +193,7 @@ void AGame::killPlayers(int entityId) {
     if (it != players.end()) {
         it->second.getRegistry().kill_entity(it->second.getEntity());
         players.erase(it);
-        std::string data = std::to_string(entityId) + ";0;0";
+        std::string data = std::to_string(entityId) + ";-1;-1";
         m_server->Broadcast(m_server->createPacket(Network::PacketType::DELETE, data));
     }
 }
@@ -203,7 +203,7 @@ void AGame::killEnemies(int entityId) {
     if (it != enemies.end()) {
         it->second.getRegistry().kill_entity(it->second.getEntity());
         enemies.erase(it);
-        std::string data = std::to_string(entityId + 500) + ";0;0";
+        std::string data = std::to_string(entityId + 500) + ";-1;-1";
         m_server->Broadcast(m_server->createPacket(Network::PacketType::DELETE, data));
     }
 }
@@ -213,7 +213,7 @@ void AGame::killBullets(int entityId) {
     if (it != bullets.end()) {
         it->second.getRegistry().kill_entity(it->second.getEntity());
         bullets.erase(it);
-        std::string data = std::to_string(entityId + 200) + ";0;0";
+        std::string data = std::to_string(entityId + 200) + ";-1;-1";
         m_server->Broadcast(m_server->createPacket(Network::PacketType::DELETE, data));
     }
 }
@@ -223,7 +223,7 @@ void AGame::killBosses(int entityId) {
     if (it != bosses.end()) {
         it->second.getRegistry().kill_entity(it->second.getEntity());
         bosses.erase(it);
-        std::string data = std::to_string(entityId + 900) + ";0;0";
+        std::string data = std::to_string(entityId + 900) + ";-1;-1";
         m_server->Broadcast(m_server->createPacket(Network::PacketType::DELETE, data));
     }
 }

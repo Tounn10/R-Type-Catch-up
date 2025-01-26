@@ -38,6 +38,15 @@ namespace RType {
         Start_button
     };
 
+    class PacketElement
+    {
+        public:
+            int action;
+            int server_id;
+            float new_x;
+            float new_y;
+    };
+
     class SpriteElement {
     public:
         sf::Sprite sprite;
@@ -86,7 +95,8 @@ namespace RType {
         std::unordered_map<SpriteType, sf::Texture> textures_;
         int action;
         int server_id;
-        float new_x = 0.0, new_y = 0.0;
+        float new_x = 0.0, new_y = 0.0; // var to be deleted 
+        std::vector<PacketElement> packets;
         sf::SoundBuffer buffer_background_;
         sf::Sound sound_background_;
         sf::SoundBuffer buffer_shoot_;
