@@ -20,8 +20,8 @@ void GameState::update() {
     registry.run_systems();
     processPlayerActions();
     moveBullets();
-    checkBulletEnemyCollisions();
-    moveEnemies();
+    //checkBulletEnemyCollisions();
+    //moveEnemies();
 }
 
 void GameState::run(int numPlayers) {
@@ -45,6 +45,7 @@ void GameState::run(int numPlayers) {
         }
 
         //Sleep for a short duration to simulate frame time
+        //Actually do a clock to make sure that frames aren't computed too fast (same clock as client)
         std::this_thread::sleep_for(std::chrono::milliseconds(16));
     }
 }

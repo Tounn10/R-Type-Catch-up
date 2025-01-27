@@ -24,6 +24,8 @@
 #include <unordered_map>
 #include <boost/asio/steady_timer.hpp>
 #include <queue>
+#include <vector>
+#include <map>
 
 #define MAX_LENGTH 1024
 #define BASE_AUDIO 50
@@ -45,6 +47,15 @@ namespace RType {
             int server_id;
             float new_x;
             float new_y;
+    };
+
+    class Frame {
+    public:
+        std::vector<PacketElement> playerPackets;
+        std::vector<PacketElement> enemyPackets;
+        std::vector<PacketElement> bulletPackets;
+        std::vector<PacketElement> bossPackets;
+        PacketElement gameStatePacket;
     };
 
     class SpriteElement {
@@ -69,15 +80,14 @@ namespace RType {
         void handle_receive(const boost::system::error_code& error, std::size_t bytes_transferred);
         void handle_send(const boost::system::error_code& error, std::size_t bytes_transferred);
         void run_receive();
-        void createSprite();
+        void createSprite(Frame &frame);
         void loadTextures();
         void drawSprites(sf::RenderWindow& window);
-        void updateSpritePosition();
+        void updateSpritePosition(Frame &frame);
         void parseMessage(std::string packet_data);
-        void destroySprite();
+        void destroySprite(Frame &frame);
         void processEvents(sf::RenderWindow& window);
         void initLobbySprites(sf::RenderWindow& window);
-        void resetValues();
         void LoadSound();
         std::string createMousePacket(Network::PacketType type, int x = 0, int y = 0);
         void start_send_timer();
@@ -93,10 +103,11 @@ namespace RType {
         boost::asio::io_context& io_context_;
         std::vector<SpriteElement> sprites_;
         std::unordered_map<SpriteType, sf::Texture> textures_;
-        int action;
-        int server_id;
-        float new_x = 0.0, new_y = 0.0; // var to be deleted 
         std::vector<PacketElement> packets;
+        std::map<int, Frame> frameMap;
+        sf::Clock frameClock;
+        unsigned long currentFrameIndex = 0;
+        const sf::Time frameDuration = sf::milliseconds(10);
         sf::SoundBuffer buffer_background_;
         sf::Sound sound_background_;
         sf::SoundBuffer buffer_shoot_;

@@ -8,6 +8,7 @@
 #include "Client.hpp"
 
 #include <string>
+#include <X11/Xlibint.h>
 
 using boost::asio::ip::udp;
 
@@ -54,13 +55,10 @@ void RType::Client::start_receive()
 void RType::Client::handle_receive(const boost::system::error_code& error, std::size_t bytes_transferred)
 {
     if (!error || error == boost::asio::error::message_size) {
-        mutex_.lock();
+        //mutex_.lock();
         received_data.assign(recv_buffer_.data(), bytes_transferred);
         parseMessage(received_data);
-        if (action == 31) {
-            initLobbySprites(this->window);
-            action = 0;
-        }
+
         start_receive();
     } else {
         std::cerr << "[DEBUG] Error receiving: " << error.message() << std::endl;
@@ -82,45 +80,136 @@ void RType::Client::run_receive()
     io_context_.run();
 }
 
-void RType::Client::createSprite()
+void RType::Client::createSprite(Frame& frame)
 {
-    SpriteElement spriteElement;
-    SpriteType spriteType;
-
-    if (action == 22) { //change by used ID in server to create different types of sprites to be displayed
-        spriteType = SpriteType::Enemy;
-    } else if (action == 23) {
-        spriteType = SpriteType::Boss;
-    } else if (action == 24) {
-        spriteType = SpriteType::Player;
-    } else if (action == 25) {
-        spriteType = SpriteType::Bullet;
-    } else if (action == 26) {
-        spriteType = SpriteType::Background;
-    } else {
-        return;
+    for (auto& packet : frame.playerPackets) {
+        if (packet.action == 24)
+        {
+            SpriteElement spriteElement;
+            spriteElement.sprite.setTexture(textures_[SpriteType::Player]);
+            spriteElement.sprite.setPosition(packet.new_x, packet.new_y);
+            spriteElement.id = packet.server_id;
+            sprites_.push_back(spriteElement);
+        }
     }
-
-    spriteElement.sprite.setTexture(textures_[spriteType]);
-    spriteElement.sprite.setPosition(new_x, new_y);
-    spriteElement.id = server_id;
-    sprites_.push_back(spriteElement);
+    for (auto& packet : frame.enemyPackets) {
+        if (packet.action == 22)
+        {
+            SpriteElement spriteElement;
+            spriteElement.sprite.setTexture(textures_[SpriteType::Enemy]);
+            spriteElement.sprite.setPosition(packet.new_x, packet.new_y);
+            spriteElement.id = packet.server_id;
+            sprites_.push_back(spriteElement);
+        }
+    }
+    for (auto& packet : frame.bulletPackets) {
+        if (packet.action == 25)
+        {
+        SpriteElement spriteElement;
+        spriteElement.sprite.setTexture(textures_[SpriteType::Bullet]);
+        spriteElement.sprite.setPosition(packet.new_x, packet.new_y);
+        spriteElement.id = packet.server_id;
+        sprites_.push_back(spriteElement);
+        }
+    }
+    for (auto& packet : frame.bossPackets) {
+        if (packet.action == 23)
+        {
+            SpriteElement spriteElement;
+            spriteElement.sprite.setTexture(textures_[SpriteType::Boss]);
+            spriteElement.sprite.setPosition(packet.new_x, packet.new_y);
+            spriteElement.id = packet.server_id;
+            sprites_.push_back(spriteElement);
+        }
+    }
 }
 
-void RType::Client::destroySprite()
+void RType::Client::destroySprite(Frame& frame) //check for other packets as menu remover action == 3 do a fifth packet type
 {
-    if (action == 28) {
-        for (auto it = sprites_.begin(); it != sprites_.end(); ++it) {
-            if (server_id == it->id) {
-                sprites_.erase(it);
-                break;
+    for (auto& packet : frame.playerPackets) {
+        if (packet.action == 28) {
+            auto it = std::remove_if(sprites_.begin(), sprites_.end(), [&](const SpriteElement& sprite) {
+                return sprite.id == packet.server_id;
+            });
+            sprites_.erase(it, sprites_.end());
+        }
+    }
+    for (auto& packet : frame.enemyPackets) {
+        if (packet.action == 28) {
+            auto it = std::remove_if(sprites_.begin(), sprites_.end(), [&](const SpriteElement& sprite) {
+                return sprite.id == packet.server_id;
+            });
+            sprites_.erase(it, sprites_.end());
+        }
+    }
+    for (auto& packet : frame.bulletPackets) {
+        if (packet.action == 28) {
+            auto it = std::remove_if(sprites_.begin(), sprites_.end(), [&](const SpriteElement& sprite) {
+                return sprite.id == packet.server_id;
+            });
+            sprites_.erase(it, sprites_.end());
+        }
+    }
+    for (auto& packet : frame.bossPackets) {
+        if (packet.action == 28) {
+            auto it = std::remove_if(sprites_.begin(), sprites_.end(), [&](const SpriteElement& sprite) {
+                return sprite.id == packet.server_id;
+            });
+            sprites_.erase(it, sprites_.end());
+        }
+    }
+}
+
+void RType::Client::updateSpritePosition(Frame& frame)
+{
+    for (auto& packet : frame.playerPackets) {
+        if (packet.action == 29) {
+            for (auto& spriteElement : sprites_) {
+                if (spriteElement.id == packet.server_id) {
+                    spriteElement.sprite.setPosition(packet.new_x, packet.new_y);
+                    break;
+                }
             }
         }
     }
-    if (action == 3) {
+    for (auto& packet : frame.enemyPackets) {
+        if (packet.action == 29) {
+            for (auto& spriteElement : sprites_) {
+                if (spriteElement.id == packet.server_id) {
+                    spriteElement.sprite.setPosition(packet.new_x, packet.new_y);
+                    break;
+                }
+            }
+        }
+    }
+    for (auto& packet : frame.bulletPackets) {
+        if (packet.action == 29) {
+            for (auto& spriteElement : sprites_) {
+                if (spriteElement.id == packet.server_id) {
+                    spriteElement.sprite.setPosition(packet.new_x, packet.new_y);
+                    break;
+                }
+            }
+        }
+    }
+    for (auto& packet : frame.bossPackets) {
+        if (packet.action == 29) {
+            for (auto& spriteElement : sprites_) {
+                if (spriteElement.id == packet.server_id) {
+                    spriteElement.sprite.setPosition(packet.new_x, packet.new_y);
+                    break;
+                }
+            }
+        }
+    }
+    if (frame.gameStatePacket.action == 31) {
+        initLobbySprites(this->window);
+    } else if (frame.gameStatePacket.action == 3)
+    {
         for (auto it = sprites_.begin(); it != sprites_.end(); ++it) {
             if (it->id == -101) {
                 sprites_.erase(it);
+                break;
             }
         }
     }
@@ -143,17 +232,7 @@ void RType::Client::drawSprites(sf::RenderWindow& window)
     }
 }
 
-void RType::Client::updateSpritePosition()
-{
-    if (action == 29) {
-        for (auto& spriteElement : sprites_) {
-            if (server_id == spriteElement.id) {
-                spriteElement.sprite.setPosition(new_x, new_y);
-                break;
-            }
-        }
-    }
-}
+
 
 void RType::Client::parseMessage(std::string packet_data)
 {
@@ -161,42 +240,57 @@ void RType::Client::parseMessage(std::string packet_data)
         std::cerr << "[ERROR] Empty packet data." << std::endl;
         return;
     }
-    uint8_t packet_type = static_cast<uint8_t>(packet_data[0]);
-    std::string packet_inside = packet_data.substr(2);
-    std::cout << "[DEBUG] Received Packet Type: " << static_cast<int>(packet_type) << std::endl;
-    std::cout << "[DEBUG] Received Packet Data: " << packet_inside << std::endl;
 
-    std::vector<std::string> elements;
-    std::stringstream ss(packet_inside);
-    std::string segment;
-    while (std::getline(ss, segment, ';')) {
-        elements.push_back(segment);
-    }
-    if (elements.size() != 3) {
-        std::cerr << "[ERROR] Invalid packet format: " << packet_inside << std::endl;
-        return;
-    }
-    try {
-        action = static_cast<int>(packet_type);
-        server_id = std::stoi(elements[0]);
-        new_x = std::stof(elements[1]);
-        new_y = std::stof(elements[2]);
+    std::stringstream ss(packet_data);
+    std::string packet_segment;
 
-        std::cout << "[DEBUG] Action: " << action << std::endl;
-        std::cout << "[DEBUG] Server ID: " << server_id << std::endl;
-        std::cout << "[DEBUG] New X: " << new_x << std::endl;
-        std::cout << "[DEBUG] New Y: " << new_y << std::endl;
-    } catch (const std::exception& e) {
-        std::cerr << "[ERROR] Failed to parse packet data: " << e.what() << std::endl;
-    }
-}
+    while (std::getline(ss, packet_segment, '/')) {
+        std::vector<std::string> elements;
+        std::stringstream packet_ss(packet_segment);
+        std::string segment;
 
-void RType::Client::resetValues()
-{
-    action = 0;
-    server_id = 0;
-    new_x = 0.0;
-    new_y = 0.0;
+        while (std::getline(packet_ss, segment, ';')) {
+            elements.push_back(segment);
+        }
+
+        if (elements.size() != 4) {
+            std::cerr << "[ERROR] Invalid packet format: " << packet_segment << std::endl;
+            continue;
+        }
+
+        try {
+            PacketElement packetElement;
+            uint8_t packet_type = static_cast<uint8_t>(packet_segment[0]);
+            packetElement.action = static_cast<int>(packet_type);
+            packetElement.server_id = std::stoi(elements[1]);
+            packetElement.new_x = std::stof(elements[2]);
+            packetElement.new_y = std::stof(elements[3]);
+
+            // Add the packetElement to the appropriate vector in the Frame object
+            if (packetElement.server_id >= 0 && packetElement.server_id < 100) {
+                frameMap[packetElement.server_id].playerPackets.push_back(packetElement);
+            } else if (packetElement.server_id >= 200 && packetElement.server_id < 500) {
+                frameMap[packetElement.server_id].bulletPackets.push_back(packetElement);
+            } else if (packetElement.server_id >= 500 && packetElement.server_id < 900) {
+                frameMap[packetElement.server_id].enemyPackets.push_back(packetElement);
+            } else if (packetElement.server_id >= 900) {
+                frameMap[packetElement.server_id].bossPackets.push_back(packetElement);
+            } else if (packetElement.action == 31 || packetElement.action == 3) {
+                std::cout << "[DEBUG] Lobby packet received." << std::endl;
+                frameMap[packetElement.server_id].gameStatePacket = packetElement;
+            } else {
+                std::cerr << "[ERROR] Unknown server ID: " << packetElement.server_id << std::endl;
+            }
+
+            std::cout << "[DEBUG] Action: " << packetElement.action << std::endl;
+            std::cout << "[DEBUG] Server ID: " << packetElement.server_id << std::endl;
+            std::cout << "[DEBUG] New X: " << packetElement.new_x << std::endl;
+            std::cout << "[DEBUG] New Y: " << packetElement.new_y << std::endl;
+
+        } catch (const std::exception& e) {
+            std::cerr << "[ERROR] Failed to parse packet data: " << e.what() << std::endl;
+        }
+    }
 }
 
 void RType::Client::LoadSound()
@@ -223,11 +317,22 @@ int RType::Client::main_loop()
 
     while (this->window.isOpen()) {
         processEvents(this->window);
-        createSprite();
-        destroySprite();
-        updateSpritePosition();
-        resetValues();
-        mutex_.unlock();
+
+        if (frameClock.getElapsedTime() >= frameDuration) {
+            frameClock.restart();
+            if (!frameMap.empty()) {
+                currentFrameIndex = (currentFrameIndex + 1) % frameMap.size();
+            }
+
+            auto it = frameMap.begin();
+            std::advance(it, currentFrameIndex);
+            Frame& currentFrame = it->second;
+
+            createSprite(currentFrame);
+            destroySprite(currentFrame);
+            updateSpritePosition(currentFrame);
+        }
+        //mutex_.unlock();
 
         this->window.clear();
         drawSprites(window);
