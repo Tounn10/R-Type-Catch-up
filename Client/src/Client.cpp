@@ -266,18 +266,19 @@ void RType::Client::parseMessage(std::string packet_data)
             packetElement.new_x = std::stof(elements[2]);
             packetElement.new_y = std::stof(elements[3]);
 
+            Frame new_frame;
+
             // Add the packetElement to the appropriate vector in the Frame object
             if (packetElement.server_id >= 0 && packetElement.server_id < 100) {
-                frameMap[packetElement.server_id].playerPackets.push_back(packetElement);
+                new_frame.playerPackets.push_back(packetElement);
             } else if (packetElement.server_id >= 200 && packetElement.server_id < 500) {
-                frameMap[packetElement.server_id].bulletPackets.push_back(packetElement);
+                new_frame.bulletPackets.push_back(packetElement);
             } else if (packetElement.server_id >= 500 && packetElement.server_id < 900) {
-                frameMap[packetElement.server_id].enemyPackets.push_back(packetElement);
+                new_frame.enemyPackets.push_back(packetElement);
             } else if (packetElement.server_id >= 900) {
-                frameMap[packetElement.server_id].bossPackets.push_back(packetElement);
+                new_frame.bossPackets.push_back(packetElement);
             } else if (packetElement.action == 31 || packetElement.action == 3) {
-                std::cout << "[DEBUG] Lobby packet received." << std::endl;
-                frameMap[packetElement.server_id].gameStatePacket = packetElement;
+                new_frame.gameStatePacket = packetElement;
             } else {
                 std::cerr << "[ERROR] Unknown server ID: " << packetElement.server_id << std::endl;
             }
@@ -286,6 +287,7 @@ void RType::Client::parseMessage(std::string packet_data)
             std::cout << "[DEBUG] Server ID: " << packetElement.server_id << std::endl;
             std::cout << "[DEBUG] New X: " << packetElement.new_x << std::endl;
             std::cout << "[DEBUG] New Y: " << packetElement.new_y << std::endl;
+            frameMap.emplace(frameMap.size(), new_frame);
 
         } catch (const std::exception& e) {
             std::cerr << "[ERROR] Failed to parse packet data: " << e.what() << std::endl;

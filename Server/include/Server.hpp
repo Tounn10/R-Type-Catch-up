@@ -38,11 +38,12 @@ namespace RType {
 
         void setGameState(GameState* game);
         void Broadcast(const std::string& message);
-        void playerPacketFactory();
-        void enemyPacketFactory();
-        void bulletPacketFactory();
-        void bossPacketFactory();
-        void PacketFactory();
+        void playerPacketFactory(EngineFrame &frame);
+        void enemyPacketFactory(EngineFrame &frame);
+        void bulletPacketFactory(EngineFrame &frame);
+        void bossPacketFactory(EngineFrame &frame);
+        void SendFrame(EngineFrame &frame);
+        void PacketFactory(EngineFrame &frame);
         bool hasPositionChanged(int id, float x, float y, std::unordered_map<int, std::pair<float, float>>& lastKnownPositions);
         Network::ReqConnect reqConnectData(boost::asio::ip::udp::endpoint& client_endpoint);
         Network::DisconnectData disconnectData(boost::asio::ip::udp::endpoint& client_endpoint);

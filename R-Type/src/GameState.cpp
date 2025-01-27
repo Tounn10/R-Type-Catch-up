@@ -48,7 +48,7 @@ void GameState::run(int numPlayers) {
 
         m_server->PacketFactory(new_frame); // That will fill the string bullet of frame with the bullet packets
         engineFrames.emplace(frameId++, new_frame);
-        //m_server->sendFrame(engineFrames); function to define to send the correct frame to the client
+        m_server->SendFrame(new_frame); //See with Théo how to send the actual frame - 60 to the client (Server/Client delay latency handling)
         //Sleep for a short duration to simulate frame time
         //Actually do a clock to make sure that frames aren't computed too fast (same clock as client)
         std::this_thread::sleep_for(std::chrono::milliseconds(16));
