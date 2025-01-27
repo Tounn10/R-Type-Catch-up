@@ -26,7 +26,9 @@ void GameState::update() {
 
 void GameState::run(int numPlayers) {
     initializeplayers(numPlayers);
+    int frameId = 0;
     while (true) {
+        EngineFrame new_frame;
         // Update game state
         update();
 
@@ -44,10 +46,12 @@ void GameState::run(int numPlayers) {
             spawnEnemiesRandomly();
         }
 
+        m_server->PacketFactory(new_frame); // That will fill the string bullet of frame with the bullet packets
+        engineFrames.emplace(frameId++, new_frame);
+        //m_server->sendFrame(engineFrames); function to define to send the correct frame to the client
         //Sleep for a short duration to simulate frame time
         //Actually do a clock to make sure that frames aren't computed too fast (same clock as client)
         std::this_thread::sleep_for(std::chrono::milliseconds(16));
-        m_server->bulletPacketFactory();
     }
 }
 
