@@ -71,7 +71,6 @@ void AGame::processPlayerActions() {
         } else if (actionId == 5) { // Change by real action ID defined in server
             spawnBullet(playerId);
             action.setProcessed(true);
-            m_server->bulletPacketFactory();
         }
         // Handle other actions or ignore unknown action IDs
     }
@@ -248,7 +247,6 @@ void AGame::moveBullets() {
             bullets.find(id)->second.move(1.0f, 0.0f);
         }
     }
-    m_server->bulletPacketFactory();
 }
 
 void AGame::checkBulletEnemyCollisions() {

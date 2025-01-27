@@ -22,6 +22,7 @@
 #include "Collidable.hpp"
 #include "Projectile.hpp"
 #include "PlayerAction.hpp"
+#include "EngineFrame.hpp"
 #include "Position.hpp"
 #include "Drawable.hpp"
 #include "Collidable.hpp"
@@ -43,6 +44,7 @@ class AGame : public IGame {
         std::map<int, Enemy> enemies;
         std::map<int, Bullet> bullets;
         std::map<int, Boss> bosses;
+        std::map<int, EngineFrame> engineFrames;
         Registry registry;
         RType::Server* m_server;
         std::mutex playerActionsMutex;

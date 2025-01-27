@@ -111,7 +111,7 @@ Network::Packet RType::Server::deserializePacket(const std::string& packet_str)
 std::string RType::Server::createPacket(const Network::PacketType& type, const std::string& data)
 {
     std::string packet_str;
-    std::string packet_data = data.empty() ? "-1;-1;-1/" : data + "/";
+    std::string packet_data = data.empty() ? "-1;-1;-1/" : data;
     std::cout << "[DEBUG] Creating packet with type: " << static_cast<int>(type) << " and data: " << packet_data << std::endl;
 
     packet_str.push_back(static_cast<uint8_t>(type));
@@ -196,65 +196,85 @@ bool RType::Server::hasPositionChanged(int id, float x, float y, std::unordered_
 
 void RType::Server::playerPacketFactory() {
     static std::unordered_map<int, std::pair<float, float>> lastKnownPositions;
+    std::string data;
 
     for (const auto& [playerId, player] : m_game->getPlayers()) {
         try {
             auto [x, y] = m_game->getPlayerPosition(playerId);
             if (hasPositionChanged(playerId, x, y, lastKnownPositions)) {
-                std::string data = std::to_string(playerId) + ";" + std::to_string(x) + ";" + std::to_string(y);
-                Broadcast(createPacket(Network::PacketType::CHANGE, data));
+                std::string second_part = std::to_string(playerId) + ";" + std::to_string(x) + ";" + std::to_string(y) + "/";
+                data += createPacket(Network::PacketType::CHANGE, second_part);
+                std::cout << data << std::endl;
             }
         } catch (const std::out_of_range& e) {
             std::cerr << "[ERROR] Invalid player ID: " << playerId << " - " << e.what() << std::endl;
         }
     }
+
+    if (!data.empty()) {
+        Broadcast(data);
+    }
 }
 
 void RType::Server::enemyPacketFactory() {
     static std::unordered_map<int, std::pair<float, float>> lastKnownPositions;
+    std::string data;
 
     for (const auto& [enemyId, enemy] : m_game->getEnemies()) {
         try {
             auto [x, y] = m_game->getEnemyPosition(enemyId);
             if (hasPositionChanged(enemyId, x, y, lastKnownPositions)) {
-                std::string data = std::to_string(enemyId + 500) + ";" + std::to_string(x) + ";" + std::to_string(y);
-                Broadcast(createPacket(Network::PacketType::CHANGE, data));
+                data += std::to_string(enemyId + 500) + ";" + std::to_string(x) + ";" + std::to_string(y) + "/";
             }
         } catch (const std::out_of_range& e) {
             std::cerr << "[ERROR] Invalid enemy ID: " << enemyId << " - " << e.what() << std::endl;
         }
     }
+
+    if (!data.empty()) {
+        Broadcast(createPacket(Network::PacketType::CHANGE, data));
+    }
 }
 
 void RType::Server::bulletPacketFactory() {
     static std::unordered_map<int, std::pair<float, float>> lastKnownPositions;
+    std::string data;
 
     for (const auto& [bulletId, bullet] : m_game->getBullets()) {
         try {
             auto [x, y] = m_game->getBulletPosition(bulletId);
             if (hasPositionChanged(bulletId, x, y, lastKnownPositions)) {
-                std::string data = std::to_string(bulletId + 200) + ";" + std::to_string(x) + ";" + std::to_string(y);
-                Broadcast(createPacket(Network::PacketType::CHANGE, data));
+                std::string second_part = std::to_string(bulletId + 200) + ";" + std::to_string(x) + ";" + std::to_string(y) + "/";
+                data += createPacket(Network::PacketType::CHANGE, second_part);
+                std::cout << "DATA : " << data << std::endl;
             }
         } catch (const std::out_of_range& e) {
             std::cerr << "[ERROR] Invalid bullet ID: " << bulletId << " - " << e.what() << std::endl;
         }
     }
+
+    if (!data.empty()) {
+        Broadcast(data);
+    }
 }
 
 void RType::Server::bossPacketFactory() {
     static std::unordered_map<int, std::pair<float, float>> lastKnownPositions;
+    std::string data;
 
     for (const auto& [bossId, boss] : m_game->getBosses()) {
         try {
             auto [x, y] = m_game->getBossPosition(bossId);
             if (hasPositionChanged(bossId, x, y, lastKnownPositions)) {
-                std::string data = std::to_string(bossId + 900) + ";" + std::to_string(x) + ";" + std::to_string(y);
-                Broadcast(createPacket(Network::PacketType::CHANGE, data));
+                data += std::to_string(bossId + 900) + ";" + std::to_string(x) + ";" + std::to_string(y) + "/";
             }
         } catch (const std::out_of_range& e) {
             std::cerr << "[ERROR] Invalid boss ID: " << bossId << " - " << e.what() << std::endl;
         }
+    }
+
+    if (!data.empty()) {
+        Broadcast(createPacket(Network::PacketType::CHANGE, data));
     }
 }
 
