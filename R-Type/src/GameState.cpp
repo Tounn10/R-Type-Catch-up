@@ -27,31 +27,31 @@ void GameState::update() {
 void GameState::run(int numPlayers) {
     initializeplayers(numPlayers);
     int frameId = 0;
+    int last_frame_sent = 0;
     while (true) {
-        EngineFrame new_frame;
-        // Update game state
-        update();
-
-         //Check if all enemies are cleared and start the next wave or spawn the boss
-        if (areEnemiesCleared()) {
-             if (isBossSpawned()) {
-                 std::cout << "Boss defeated! Game over." << std::endl;
-                 break;
-             } else if (currentWave >= 3) {
-                 spawnBoss(nextBossId++, 400.0f, 300.0f); // Spawn boss at the center of the screen
-             } else {
-                 startNextWave();
-             }
-        } else {
-            spawnEnemiesRandomly();
+        if (frameClock.getElapsedTime() >= frameDuration)
+        {
+            EngineFrame new_frame;
+            frameClock.restart();
+            update();
+            //Check if all enemies are cleared and start the next wave or spawn the boss
+            if (areEnemiesCleared()) {
+                if (isBossSpawned()) {
+                    std::cout << "Boss defeated! Game over." << std::endl;
+                    break;
+                } else if (currentWave >= 3) {
+                    spawnBoss(nextBossId++, 400.0f, 300.0f); // Spawn boss at the center of the screen
+                } else {
+                    startNextWave();
+                }
+            } else {
+                spawnEnemiesRandomly();
+            }
+            engineFrames.emplace(frameId++, new_frame);
+            //if (engineFrames.size() > 60) { This needs to go to the server as well as the clock
+            //    m_server->SendFrame(engineFrames.at(last_frame_sent++));
+            //}
         }
-
-        m_server->PacketFactory(new_frame); // That will fill the string bullet of frame with the bullet packets
-        engineFrames.emplace(frameId++, new_frame);
-        m_server->SendFrame(new_frame); //See with Théo how to send the actual frame - 60 to the client (Server/Client delay latency handling)
-        //Sleep for a short duration to simulate frame time
-        //Actually do a clock to make sure that frames aren't computed too fast (same clock as client)
-        std::this_thread::sleep_for(std::chrono::milliseconds(16));
     }
 }
 

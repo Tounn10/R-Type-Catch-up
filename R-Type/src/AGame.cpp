@@ -43,6 +43,10 @@ std::map<int, Boss>& AGame::getBosses() {
     return bosses;
 }
 
+std::map<int, EngineFrame>& AGame::getEngineFrames() {
+    return engineFrames;
+}
+
 void AGame::registerComponents()
 {
     registry.register_component<Position>();

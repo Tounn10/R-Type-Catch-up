@@ -185,6 +185,20 @@ Network::DisconnectData RType::Server::disconnectData(boost::asio::ip::udp::endp
     return data;
 }
 
+void RType::Server::run() {
+    while (true) {
+        // Check if there are frames to send and if it's the right time to send
+        if (!m_game->getEngineFrames().empty()) {
+            auto it = m_game->getEngineFrames().begin();  // Get the first frame
+            EngineFrame frame = it->second;
+
+            // Client or Server side for Packet build ?
+            PacketFactory(frame);
+            SendFrame(frame);
+        }
+    }
+}
+
 bool RType::Server::hasPositionChanged(int id, float x, float y, std::unordered_map<int, std::pair<float, float>>& lastKnownPositions) {
     auto it = lastKnownPositions.find(id);
     if (it == lastKnownPositions.end() || it->second != std::make_pair(x, y)) {

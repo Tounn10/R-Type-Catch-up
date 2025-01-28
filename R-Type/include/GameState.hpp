@@ -32,7 +32,9 @@ private:
     std::uniform_real_distribution<float> distY;
     std::uniform_int_distribution<int> distTime;
     int enemiesPerWave;
-    std::chrono::steady_clock::time_point lastSpawnTime; 
+    std::chrono::steady_clock::time_point lastSpawnTime;
+    sf::Clock frameClock;
+    const sf::Time frameDuration = sf::milliseconds(10);
 
     void spawnEnemiesRandomly();
     RType::Server* m_server; // Pointer to RType::Server

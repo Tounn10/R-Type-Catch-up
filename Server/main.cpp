@@ -41,9 +41,16 @@ void runServer(short port) {
 
         std::cout << "Server started\nListening on UDP port " << port << std::endl;
 
-        std::thread serverThread([&io_context] {
+        std::thread io_thread([&io_context] {
             io_context.run();
         });
+
+        std::thread serverThread([&server] {
+            server.run();
+        });
+
+        if (io_thread.joinable())
+            io_thread.join();
 
         if (serverThread.joinable())
             serverThread.join();

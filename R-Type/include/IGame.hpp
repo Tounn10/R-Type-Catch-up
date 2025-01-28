@@ -12,6 +12,7 @@
 #include <utility>
 #include <cstddef>
 #include "PlayerAction.hpp"
+#include "EngineFrame.hpp"
 #include "Player.hpp"
 #include "Enemy.hpp"
 #include "Bullet.hpp"
@@ -43,6 +44,7 @@ public:
     virtual std::pair<float, float> getBulletPosition(int bulletId) const = 0;
     virtual std::pair<float, float> getEnemyPosition(int enemyId) const = 0;
     virtual std::pair<float, float> getBossPosition(int enemyId) const = 0;
+    virtual std::map<int, EngineFrame>& getEngineFrames() = 0;
     virtual std::map<int, Player>& getPlayers() = 0;
     virtual std::map<int, Enemy>& getEnemies() = 0;
     virtual std::map<int, Bullet>& getBullets() = 0;

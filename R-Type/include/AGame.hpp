@@ -65,11 +65,12 @@ class AGame : public IGame {
         std::pair<float, float> getEnemyPosition(int enemyId) const override;
         std::pair<float, float> getBossPosition(int enemyId) const override;
 
-        // Public getter methods for maps of players, enemies, bullets and bosses
+        // Public getter methods for maps of players, enemies, bullets, bosses and frames
         std::map<int, Player>& getPlayers() override;
         std::map<int, Enemy>& getEnemies() override;
         std::map<int, Bullet>& getBullets() override;
         std::map<int, Boss>& getBosses() override;
+        std::map<int, EngineFrame>& getEngineFrames() override;
 
         // Implement entity spawn and delete management functions
         void spawnEnemy(int enemyId, float x, float y) override;
