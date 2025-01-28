@@ -186,18 +186,26 @@ Network::DisconnectData RType::Server::disconnectData(boost::asio::ip::udp::endp
 }
 
 void RType::Server::run() {
+    const std::chrono::milliseconds frameInterval(16);
+    auto lastSendTime = std::chrono::steady_clock::now();
+
     while (true) {
+        auto now = std::chrono::steady_clock::now();
+        std::chrono::milliseconds elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastSendTime);
+
         // Check if there are frames to send and if it's the right time to send
-        if (!m_game->getEngineFrames().empty()) {
-            auto it = m_game->getEngineFrames().begin();  // Get the first frame
+        if (!m_game->getEngineFrames().empty() && elapsedTime >= frameInterval) {
+            auto it = m_game->getEngineFrames().end();
+            --it;
             EngineFrame frame = it->second;
 
-            // Client or Server side for Packet build ?
             PacketFactory(frame);
             SendFrame(frame);
+            lastSendTime = now;
         }
     }
 }
+
 
 bool RType::Server::hasPositionChanged(int id, float x, float y, std::unordered_map<int, std::pair<float, float>>& lastKnownPositions) {
     auto it = lastKnownPositions.find(id);
