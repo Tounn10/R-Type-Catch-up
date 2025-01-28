@@ -322,8 +322,8 @@ int RType::Client::main_loop()
 
         if (frameClock.getElapsedTime() >= frameDuration) {
             frameClock.restart();
-            if (!frameMap.empty()) {
-                currentFrameIndex = (currentFrameIndex + 1) % frameMap.size();
+            if (!frameMap.empty() && currentFrameIndex + 1 < frameMap.size()) {
+                currentFrameIndex += 1;
             }
 
             auto it = frameMap.begin();
