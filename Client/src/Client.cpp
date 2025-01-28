@@ -329,7 +329,7 @@ int RType::Client::main_loop()
             auto it = frameMap.begin();
             std::advance(it, currentFrameIndex);
             Frame& currentFrame = it->second;
-
+            std::cout << "[DEBUG] Current frame index: " << currentFrameIndex << std::endl;
             createSprite(currentFrame);
             destroySprite(currentFrame);
             updateSpritePosition(currentFrame);

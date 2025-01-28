@@ -47,7 +47,10 @@ void GameState::run(int numPlayers) {
             } else {
                 spawnEnemiesRandomly();
             }
+            m_server->server_mutex.lock();
+            std::cout << "Frame ID: " << frameId++ << std::endl;
             engineFrames.emplace(frameId++, new_frame);
+            m_server->server_mutex.unlock();
             //if (engineFrames.size() > 60) { This needs to go to the server as well as the clock
             //    m_server->SendFrame(engineFrames.at(last_frame_sent++));
             //}

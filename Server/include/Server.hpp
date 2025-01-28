@@ -58,6 +58,7 @@ namespace RType {
         ClientList clients_;
         uint32_t _nbClients;
         std::mutex clients_mutex_;
+        std::mutex server_mutex;
         bool m_running;
     private:
         using PacketHandler = std::function<void(const std::vector<std::string>&)>;

@@ -194,15 +194,17 @@ void RType::Server::run() {
         std::chrono::milliseconds elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastSendTime);
 
         // Check if there are frames to send and if it's the right time to send
+        server_mutex.lock();
         if (!m_game->getEngineFrames().empty() && elapsedTime >= frameInterval) {
             auto it = m_game->getEngineFrames().end();
             --it;
             EngineFrame frame = it->second;
-
+            std::cout << "[DEBUG] Sending frame " << it->first << std::endl;
             PacketFactory(frame);
             SendFrame(frame);
             lastSendTime = now;
         }
+        server_mutex.unlock();
     }
 }
 
