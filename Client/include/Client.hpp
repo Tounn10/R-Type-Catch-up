@@ -51,10 +51,7 @@ namespace RType {
 
     class Frame {
     public:
-        std::vector<PacketElement> playerPackets;
-        std::vector<PacketElement> enemyPackets;
-        std::vector<PacketElement> bulletPackets;
-        std::vector<PacketElement> bossPackets;
+        std::vector<PacketElement> entityPackets;
         PacketElement gameStatePacket;
     };
 

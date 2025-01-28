@@ -12,7 +12,7 @@ GameState::GameState(RType::Server* server)
 
 void GameState::initializeplayers(int numPlayers) {
     for (int i = 0; i < numPlayers; ++i) {
-        spawnPlayer(i, 100.0f * (i + 1.0f), 100.0f);
+        spawnEntity(GeneralEntity::EntityType::Player, 100.0f * (i + 1.0f), 100.0f);
     }
 }
 
@@ -26,8 +26,10 @@ void GameState::update() {
 
 void GameState::run(int numPlayers) {
     initializeplayers(numPlayers);
+    spawnEnemiesRandomly();
     int frameId = 0;
     int last_frame_sent = 0;
+
     while (true) {
         if (frameClock.getElapsedTime() >= frameDuration)
         {
@@ -40,7 +42,7 @@ void GameState::run(int numPlayers) {
                     std::cout << "Boss defeated! Game over." << std::endl;
                     break;
                 } else if (currentWave >= 3) {
-                    spawnBoss(nextBossId++, 400.0f, 300.0f); // Spawn boss at the center of the screen
+                    spawnEntity(GeneralEntity::EntityType::Boss, 400.0f, 300.0f); // Spawn boss at the center of the screen
                 } else {
                     startNextWave();
                 }
@@ -72,8 +74,8 @@ void GameState::handlePlayerMove(int playerId, int actionId) {
     } else if (actionId == 4) { // Down
         y = moveDistance;
     }
-    auto it = players.find(playerId);
-    if (it != players.end()) {
+    auto it = entities.find(playerId);
+    if (it != entities.end()) {
         it->second.move(x, y);
     } else {
         std::cerr << "[ERROR] Player ID " << playerId << " not found." << std::endl;
@@ -81,18 +83,22 @@ void GameState::handlePlayerMove(int playerId, int actionId) {
 }
 
 bool GameState::isBossSpawned() const {
-    return !bosses.empty();
+    return std::any_of(entities.begin(), entities.end(), [](const auto& pair) {
+        return pair.second.getType() == GeneralEntity::EntityType::Boss;
+    });
 }
 
 bool GameState::areEnemiesCleared() const {
-    return enemies.empty();
+    return std::none_of(entities.begin(), entities.end(), [](const auto& pair) {
+        return pair.second.getType() == GeneralEntity::EntityType::Enemy;
+    });
 }
 
 void GameState::startNextWave() {
     currentWave++;
     enemiesPerWave += 5; // Increase the number of enemies per wave
     for (int i = 0; i < enemiesPerWave; ++i) {
-        spawnEnemy(nextEnemyId++, distX(rng), distY(rng));
+        spawnEntity(GeneralEntity::EntityType::Enemy, distX(rng), distY(rng));
     }
 }
 
@@ -100,26 +106,22 @@ void GameState::spawnEnemiesRandomly() {
     auto now = std::chrono::steady_clock::now();
     auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastSpawnTime).count();
 
-    if (elapsed > distTime(rng) && enemies.size() < 10) {
+    // Check time and max limit for enemy spawning
+    if (elapsed > distTime(rng) &&
+        std::count_if(entities.begin(), entities.end(), [](const auto& pair) {
+            return pair.second.getType() == GeneralEntity::EntityType::Enemy;
+        }) < 10) {
+
+        // Generate random position
         float x = distX(rng);
         float y = distY(rng);
-        spawnEnemy(nextEnemyId++, x, y);
+
+        // Spawn enemy
+        spawnEntity(GeneralEntity::EntityType::Enemy, x, y);
         lastSpawnTime = now;
-    }
+        }
 }
 
-size_t GameState::getPlayerCount() const {
-    return players.size();
-}
-
-size_t GameState::getEnemiesCount() const {
-    return enemies.size();
-}
-
-size_t GameState::getBulletsCount() const {
-    return bullets.size();
-}
-
-size_t GameState::getBossCount() const {
-    return bosses.size();
+size_t GameState::getEntityCount() const {
+    return entities.size();
 }

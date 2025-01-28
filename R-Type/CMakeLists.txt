@@ -22,10 +22,7 @@ set(RTYPE_SOURCES
     src/GameState.cpp
     src/AGame.cpp
     src/PlayerAction.cpp
-    src/Entity/Player.cpp
-    src/Entity/Enemy.cpp
-    src/Entity/Bullet.cpp
-    src/Entity/Boss.cpp
+    src/Entity/GeneralEntity.cpp
 )
 
 add_library(R-Type ${RTYPE_SOURCES})

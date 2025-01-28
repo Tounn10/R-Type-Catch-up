@@ -218,86 +218,26 @@ bool RType::Server::hasPositionChanged(int id, float x, float y, std::unordered_
     return false;
 }
 
-void RType::Server::playerPacketFactory(EngineFrame &frame) {
+void RType::Server::PacketFactory(EngineFrame &frame)
+{
     static std::unordered_map<int, std::pair<float, float>> lastKnownPositions;
 
-    for (const auto& [playerId, player] : m_game->getPlayers()) {
+    for (const auto & [entityId, entity] : m_game->getEntities()) {
         try {
-            auto [x, y] = m_game->getPlayerPosition(playerId);
-            if (hasPositionChanged(playerId, x, y, lastKnownPositions)) {
-                std::string second_part = std::to_string(playerId) + ";" + std::to_string(x) + ";" + std::to_string(y) + "/";
-                frame.playerInfos += createPacket(Network::PacketType::CHANGE, second_part);
+            auto [x, y] = m_game->getEntityPosition(entityId);
+            if (hasPositionChanged(entityId, x, y, lastKnownPositions)) {
+                std::string second_part = std::to_string(entityId) + ";" + std::to_string(x) + ";" + std::to_string(y) + "/";
+                frame.frameInfos += createPacket(Network::PacketType::CHANGE, second_part);
             }
         } catch (const std::out_of_range& e) {
-            std::cerr << "[ERROR] Invalid player ID: " << playerId << " - " << e.what() << std::endl;
+            std::cerr << "[ERROR] Invalid entity ID: " << entityId << " - " << e.what() << std::endl;
         }
     }
-}
-
-void RType::Server::enemyPacketFactory(EngineFrame &frame) {
-    static std::unordered_map<int, std::pair<float, float>> lastKnownPositions;
-
-    for (const auto& [enemyId, enemy] : m_game->getEnemies()) {
-        try {
-            auto [x, y] = m_game->getEnemyPosition(enemyId);
-            if (hasPositionChanged(enemyId, x, y, lastKnownPositions)) {
-                std::string second_part = std::to_string(enemyId + 500) + ";" + std::to_string(x) + ";" + std::to_string(y) + "/";
-                frame.enemyInfos += createPacket(Network::PacketType::CHANGE, second_part);
-            }
-        } catch (const std::out_of_range& e) {
-            std::cerr << "[ERROR] Invalid enemy ID: " << enemyId << " - " << e.what() << std::endl;
-        }
-    }
-}
-
-void RType::Server::bulletPacketFactory(EngineFrame &frame) {
-    static std::unordered_map<int, std::pair<float, float>> lastKnownPositions;
-
-    for (const auto& [bulletId, bullet] : m_game->getBullets()) {
-        try {
-            auto [x, y] = m_game->getBulletPosition(bulletId);
-            if (hasPositionChanged(bulletId, x, y, lastKnownPositions)) {
-                std::string second_part = std::to_string(bulletId + 200) + ";" + std::to_string(x) + ";" + std::to_string(y) + "/";
-                frame.bulletInfos += createPacket(Network::PacketType::CHANGE, second_part);
-            }
-        } catch (const std::out_of_range& e) {
-            std::cerr << "[ERROR] Invalid bullet ID: " << bulletId << " - " << e.what() << std::endl;
-        }
-    }
-}
-
-void RType::Server::bossPacketFactory(EngineFrame &frame) {
-    static std::unordered_map<int, std::pair<float, float>> lastKnownPositions;
-
-    for (const auto& [bossId, boss] : m_game->getBosses()) {
-        try {
-            auto [x, y] = m_game->getBossPosition(bossId);
-            if (hasPositionChanged(bossId, x, y, lastKnownPositions)) {
-                std::string second_part = std::to_string(bossId + 900) + ";" + std::to_string(x) + ";" + std::to_string(y) + "/";
-                frame.bossInfos += createPacket(Network::PacketType::CHANGE, second_part);
-            }
-        } catch (const std::out_of_range& e) {
-            std::cerr << "[ERROR] Invalid boss ID: " << bossId << " - " << e.what() << std::endl;
-        }
-    }
-}
-
-void RType::Server::PacketFactory(EngineFrame &frame) {
-    playerPacketFactory(frame);
-    enemyPacketFactory(frame);
-    bulletPacketFactory(frame);
-    bossPacketFactory(frame);
 }
 
 void RType::Server::SendFrame(EngineFrame &frame) {
-    if (!frame.playerInfos.empty())
-        Broadcast(frame.playerInfos);
-    if (!frame.enemyInfos.empty())
-        Broadcast(frame.enemyInfos);
-    if (!frame.bulletInfos.empty())
-        Broadcast(frame.bulletInfos);
-    if (!frame.bossInfos.empty())
-        Broadcast(frame.bossInfos);
+    if (!frame.frameInfos.empty())
+        Broadcast(frame.frameInfos);
 }
 
 void RType::Server::start_send_timer() {

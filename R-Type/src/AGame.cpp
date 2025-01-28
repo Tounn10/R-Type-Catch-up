@@ -21,26 +21,11 @@ AGame::AGame(RType::Server* server) : m_server(server)
 AGame::~AGame()
 {
     playerActions.clear();
-    players.clear();
-    enemies.clear();
-    bullets.clear();
-    bosses.clear();
+    entities.clear();
 }
 
-std::map<int, Player>& AGame::getPlayers() {
-    return players;
-}
-
-std::map<int, Enemy>& AGame::getEnemies() {
-    return enemies;
-}
-
-std::map<int, Bullet>& AGame::getBullets() {
-    return bullets;
-}
-
-std::map<int, Boss>& AGame::getBosses() {
-    return bosses;
+std::map<int, GeneralEntity>& AGame::getEntities() {
+    return entities;
 }
 
 std::map<int, EngineFrame>& AGame::getEngineFrames() {
@@ -71,11 +56,18 @@ void AGame::processPlayerActions() {
         if (actionId > 0 && actionId < 5) { // Change by real action ID defined in server
             handlePlayerMove(playerId, actionId);
             action.setProcessed(true);
-        } else if (actionId == 5) { // Change by real action ID defined in server
-            spawnBullet(playerId);
+        } else if (actionId == 5) {
+            // Change by real action ID defined in server
+            std::map<int, GeneralEntity> temp_entities = entities;
+            for (const auto& [id, entity] : temp_entities) {
+                if (entity.getType() == GeneralEntity::EntityType::Player && id == playerId) {
+                    auto[x, y] = getEntityPosition(id);
+                    spawnEntity(GeneralEntity::EntityType::Bullet, x, y);
+                    break;
+                }
+            }
             action.setProcessed(true);
         }
-        // Handle other actions or ignore unknown action IDs
     }
     std::lock_guard<std::mutex> lock(playerActionsMutex);
     deletePlayerAction();
@@ -92,180 +84,95 @@ const std::vector<PlayerAction>& AGame::getPlayerActions() const {
     return playerActions;
 }
 
-std::pair<float, float> AGame::getPlayerPosition(int playerId) const {
-    auto it = players.find(playerId);
-    if (it == players.end()) {
-        throw std::out_of_range("Invalid player ID");
+std::pair<float, float> AGame::getEntityPosition(int entityId) const
+{
+    auto it = entities.find(entityId);
+    if (it == entities.end()) {
+        throw std::out_of_range("Invalid entity ID");
     }
 
     const auto& positionComponent = it->second.getRegistry().get_components<Position>()[it->second.getEntity()];
     return {positionComponent->x, positionComponent->y};
 }
 
-std::pair<float, float> AGame::getEnemyPosition(int enemyId) const {
-    auto it = enemies.find(enemyId);
-    if (it == enemies.end()) {
-        throw std::out_of_range("Invalid enemy ID");
+void AGame::spawnEntity(GeneralEntity::EntityType type, float x, float y) {
+    int entityId = entities.size();
+
+    if (type == GeneralEntity::EntityType::Bullet) {
+        x += 50.0f;
+        y += 25.0f;
     }
 
-    const auto& positionComponent = it->second.getRegistry().get_components<Position>()[it->second.getEntity()];
-    return {positionComponent->x, positionComponent->y};
-}
+    entities.emplace(entityId, GeneralEntity(registry, type, x, y));
 
-std::pair<float, float> AGame::getBulletPosition(int bulletId) const {
-    auto it = bullets.find(bulletId);
-    if (it == bullets.end()) {
-        throw std::out_of_range("Invalid bullet ID");
+    std::string data = std::to_string(entityId) + ";" + std::to_string(x) + ";" + std::to_string(y) + "/";
+
+    Network::PacketType packetType;
+    switch (type) {
+    case GeneralEntity::EntityType::Player:
+        packetType = Network::PacketType::CREATE_PLAYER;
+        break;
+    case GeneralEntity::EntityType::Enemy:
+        packetType = Network::PacketType::CREATE_ENEMY;
+        break;
+    case GeneralEntity::EntityType::Boss:
+        packetType = Network::PacketType::CREATE_BOSS;
+        break;
+    case GeneralEntity::EntityType::Bullet:
+        packetType = Network::PacketType::CREATE_BULLET;
+        break;
+    default:
+        std::cerr << "Error: Unsupported entity type for spawning." << std::endl;
+        return;
     }
 
-    const auto& positionComponent = it->second.getRegistry().get_components<Position>()[it->second.getEntity()];
-    return {positionComponent->x, positionComponent->y};
+    m_server->Broadcast(m_server->createPacket(packetType, data)); //will be moved
 }
 
-std::pair<float, float> AGame::getBossPosition(int bossId) const {
-    auto it = bosses.find(bossId);
-    if (it == bosses.end()) {
-        throw std::out_of_range("Invalid boss ID");
-    }
-
-    const auto& positionComponent = it->second.getRegistry().get_components<Position>()[it->second.getEntity()];
-    return {positionComponent->x, positionComponent->y};
-}
-
-void AGame::spawnEnemy(int enemyId, float x, float y) {
-    enemies.emplace(enemyId, Enemy(registry, x, y));
-
-    std::string data = std::to_string(enemyId + 500) + ";" + std::to_string(x) + ";" + std::to_string(y);
-    m_server->Broadcast(m_server->createPacket(Network::PacketType::CREATE_ENEMY, data));
-}
-
-void AGame::spawnBoss(int bossId, float x, float y) {
-    bosses.emplace(bossId, Boss(registry, x, y));
-
-    std::string data = std::to_string(bossId + 900) + ";" + std::to_string(x) + ";" + std::to_string(y);
-    m_server->Broadcast(m_server->createPacket(Network::PacketType::CREATE_BOSS, data));
-}
-
-void AGame::spawnPlayer(int playerId, float x, float y) {
-    if (playerId >= 0 && playerId < 4) {
-        players.emplace(playerId, Player(registry, x, y));
-
-        std::string data = std::to_string(playerId) + ";" + std::to_string(x) + ";" + std::to_string(y);
-        std::cout << "Player " << playerId << " spawned at " << x << ", " << y << std::endl;
-        m_server->Broadcast(m_server->createPacket(Network::PacketType::CREATE_PLAYER, data));
-    }
-}
-
-void AGame::spawnBullet(int playerId) {
-    auto it = players.find(playerId);
-    if (it != players.end()) {
-        auto entity = it->second.getEntity();
-        if (it->second.getRegistry().has_component<Position>(entity)) {
-            const auto& position = it->second.getRegistry().get_components<Position>()[entity];
-            int bulletId = bullets.size(); // Generate a new bullet ID
-            bullets.emplace(bulletId, Bullet(registry, position->x + 50.0f, position->y + 25.0f, 1.0f));
-
-            std::string data = std::to_string(bulletId + 200) + ";" + std::to_string(position->x + 50.0f) + ";" + std::to_string(position->y + 25.0f);
-            m_server->Broadcast(m_server->createPacket(Network::PacketType::CREATE_BULLET, data));
-        } else {
-            std::cerr << "Error: Player " << playerId << " does not have a Position component." << std::endl;
-        }
-    }
-}
-
-void AGame::spawnEnemyBullet(int enemyId) {
-    auto it = enemies.find(enemyId);
-    if (it != enemies.end()) {
-        auto entity = it->second.getEntity();
-        if (it->second.getRegistry().has_component<Position>(entity)) {
-            const auto& position = it->second.getRegistry().get_components<Position>()[entity];
-            int bulletId = bullets.size(); // Generate a new bullet ID
-            bullets.emplace(bulletId, Bullet(registry, position->x - 50.0f, position->y + 25.0f, -1.0f));
-
-            std::string data = std::to_string(bulletId + 200) + ";" + std::to_string(position->x - 50.0f) + ";" + std::to_string(position->y + 25.0f);
-            m_server->Broadcast(m_server->createPacket(Network::PacketType::CREATE_BULLET, data));
-        } else {
-            std::cerr << "Error: Enemy " << enemyId << " does not have a Position component." << std::endl;
-        }
-    }
-}
-
-void AGame::killPlayers(int entityId) {
-    auto it = players.find(entityId);
-    if (it != players.end()) {
+void AGame::killEntity(int entityId)
+{
+    auto it = entities.find(entityId);
+    if (it != entities.end()) {
         it->second.getRegistry().kill_entity(it->second.getEntity());
-        players.erase(it);
-        std::string data = std::to_string(entityId) + ";-1;-1";
+        entities.erase(it);
+        std::string data = std::to_string(entityId) + ";-1;-1/";
         m_server->Broadcast(m_server->createPacket(Network::PacketType::DELETE, data));
     }
-}
-
-void AGame::killEnemies(int entityId) {
-    auto it = enemies.find(entityId);
-    if (it != enemies.end()) {
-        it->second.getRegistry().kill_entity(it->second.getEntity());
-        enemies.erase(it);
-        std::string data = std::to_string(entityId + 500) + ";-1;-1";
-        m_server->Broadcast(m_server->createPacket(Network::PacketType::DELETE, data));
-    }
-}
-
-void AGame::killBullets(int entityId) {
-    auto it = bullets.find(entityId);
-    if (it != bullets.end()) {
-        it->second.getRegistry().kill_entity(it->second.getEntity());
-        bullets.erase(it);
-        std::string data = std::to_string(entityId + 200) + ";-1;-1";
-        m_server->Broadcast(m_server->createPacket(Network::PacketType::DELETE, data));
-    }
-}
-
-void AGame::killBosses(int entityId) {
-    auto it = bosses.find(entityId);
-    if (it != bosses.end()) {
-        it->second.getRegistry().kill_entity(it->second.getEntity());
-        bosses.erase(it);
-        std::string data = std::to_string(entityId + 900) + ";-1;-1";
-        m_server->Broadcast(m_server->createPacket(Network::PacketType::DELETE, data));
-    }
-}
-
-void AGame::killEntity(int entityId) {
-    killPlayers(entityId);
-    killEnemies(entityId);
-    killBullets(entityId);
-    killBosses(entityId);
 }
 
 void AGame::moveBullets() {
     const float maxX = 800.0f;
-    
-    std::map <int, Bullet> temp_bullets = bullets;
-    for (auto& [id, bullet] : temp_bullets) {
-        auto [x, y] = getBulletPosition(id);
-        float newX = x + 1.0f;
-        if (newX > maxX) {
-            killBullets(id);
-        } else {
-            bullets.find(id)->second.move(1.0f, 0.0f);
+
+    std::map <int, GeneralEntity> temp_entities = entities;
+    for (auto& [id, entity] : temp_entities) {
+        if (entity.getType() == GeneralEntity::EntityType::Bullet) {
+            auto [x, y] = getEntityPosition(id);
+            float newX = x + 1.0f;
+            if (newX > maxX) {
+                killEntity(id);
+            } else {
+                entities.find(id)->second.move(1.0f, 0.0f);
+            }
         }
     }
 }
 
-void AGame::checkBulletEnemyCollisions() {
-    std::map<int, Bullet> temp_bullets = bullets;
-    std::map<int, Enemy> temp_enemies = enemies;
+void AGame::checkCollisions(GeneralEntity::EntityType typeA, GeneralEntity::EntityType typeB, float collisionThreshold) {
+    auto tempEntities = entities; // Copy to avoid iterator invalidation
 
-    for (const auto& [bulletId, bullet] : temp_bullets) {
-        auto [bulletX, bulletY] = getBulletPosition(bulletId);
-        for (const auto& [enemyId, enemy] : temp_enemies) {
-            auto [enemyX, enemyY] = getEnemyPosition(enemyId);
-            float distance = std::sqrt(std::pow(enemyX - bulletX, 2) + std::pow(enemyY - bulletY, 2));
-            float collisionThreshold = 30.0f;
+    for (const auto& [idA, entityA] : tempEntities) {
+        if (entityA.getType() != typeA) continue;
+        auto [posXA, posYA] = getEntityPosition(idA);
+
+        for (const auto& [idB, entityB] : tempEntities) {
+            if (entityB.getType() != typeB || idA == idB) continue;
+
+            auto [posXB, posYB] = getEntityPosition(idB);
+            float distance = std::sqrt(std::pow(posXB - posXA, 2) + std::pow(posXB - posXA, 2));
 
             if (distance < collisionThreshold) {
-                killBullets(bulletId);
-                killEnemies(enemyId);
+                killEntity(idA);
+                killEntity(idB);
             }
         }
     }
@@ -275,22 +182,24 @@ void AGame::moveEnemies() {
     static int direction = 0;
     const float moveDistance = 1.0f;
 
-    std::map<int, Enemy> temp_enemies = enemies;
-    for (auto& [id, enemy] : temp_enemies) {
-        float x = 0.0f;
-        float y = 0.0f;
+    std::map<int, GeneralEntity> temp_entities = entities;
+    for (auto& [id, entity] : temp_entities) {
+        if (entity.getType() == GeneralEntity::EntityType::Enemy) {
+            float x = 0.0f, y = 0.0f;
 
-        switch (direction) {
-            case 0: y = -moveDistance; break;
-            case 1: x = -moveDistance; break;
-            case 2: y = moveDistance; break;
-            case 3: x = moveDistance; break;
-        }
+            switch (direction) {
+                case 0: y = -moveDistance; break; // Up
+                case 1: x = -moveDistance; break; // Left
+                case 2: y = moveDistance; break;  // Down
+                case 3: x = moveDistance; break;  // Right
+            }
 
-        //enemies.find(id)->second.move(x, y); Works but heavy in packets will implement it with new system
+            entities.find(id)->second.move(x, y);
 
-        if (rand() % 100 < 0.1) {
-            //spawnEnemyBullet(id); Check for another type of bullets to avoid killing enneimes by their own bullets
+            if (rand() % 100 < 0.1) {
+                auto[x, y] = getEntityPosition(id);
+                spawnEntity(GeneralEntity::EntityType::Bullet, x + 50.0f, y + 25.0f);
+            }
         }
     }
 

@@ -13,10 +13,7 @@
 
 class EngineFrame {
 public:
-    std::string playerInfos;
-    std::string enemyInfos;
-    std::string bulletInfos;
-    std::string bossInfos;
+    std::string frameInfos;
 };
 
 #endif // ENGINEFRAME_HPP
