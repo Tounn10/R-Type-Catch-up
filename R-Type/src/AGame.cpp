@@ -48,7 +48,7 @@ void AGame::addPlayerAction(int playerId, int actionId) {
     playerActions.emplace_back(playerId, actionId);
 }
 
-void AGame::processPlayerActions() {
+void AGame::processPlayerActions(EngineFrame &frame) {
     for (auto& action : playerActions) {
         int playerId = action.getId();
         int actionId = action.getActionId();
@@ -62,7 +62,7 @@ void AGame::processPlayerActions() {
             for (const auto& [id, entity] : temp_entities) {
                 if (entity.getType() == GeneralEntity::EntityType::Player && id == playerId) {
                     auto[x, y] = getEntityPosition(id);
-                    spawnEntity(GeneralEntity::EntityType::Bullet, x, y);
+                    spawnEntity(GeneralEntity::EntityType::Bullet, x, y, frame);
                     break;
                 }
             }
@@ -95,8 +95,8 @@ std::pair<float, float> AGame::getEntityPosition(int entityId) const
     return {positionComponent->x, positionComponent->y};
 }
 
-void AGame::spawnEntity(GeneralEntity::EntityType type, float x, float y) {
-    int entityId = entities.size();
+void AGame::spawnEntity(GeneralEntity::EntityType type, float x, float y, EngineFrame &frame) {
+    int entityId = id_to_set;
 
     if (type == GeneralEntity::EntityType::Bullet) {
         x += 50.0f;
@@ -122,25 +122,26 @@ void AGame::spawnEntity(GeneralEntity::EntityType type, float x, float y) {
         packetType = Network::PacketType::CREATE_BULLET;
         break;
     default:
-        std::cerr << "Error: Unsupported entity type for spawning." << std::endl;
+        std::cerr << "Error: Unsupported entity type for spawning." << std::endl; //Becareful to not increment id_to_set if the entity type is not supported
         return;
     }
 
-    m_server->Broadcast(m_server->createPacket(packetType, data)); //will be moved
+    frame.frameInfos += m_server->createPacket(packetType, data);
+    id_to_set++;
 }
 
-void AGame::killEntity(int entityId)
+void AGame::killEntity(int entityId, EngineFrame &frame)
 {
     auto it = entities.find(entityId);
     if (it != entities.end()) {
         it->second.getRegistry().kill_entity(it->second.getEntity());
         entities.erase(it);
         std::string data = std::to_string(entityId) + ";-1;-1/";
-        m_server->Broadcast(m_server->createPacket(Network::PacketType::DELETE, data));
+        frame.frameInfos += m_server->createPacket(Network::PacketType::DELETE, data);
     }
 }
 
-void AGame::moveBullets() {
+void AGame::moveBullets(EngineFrame &frame) {
     const float maxX = 800.0f;
 
     std::map <int, GeneralEntity> temp_entities = entities;
@@ -149,7 +150,7 @@ void AGame::moveBullets() {
             auto [x, y] = getEntityPosition(id);
             float newX = x + 1.0f;
             if (newX > maxX) {
-                killEntity(id);
+                killEntity(id, frame);
             } else {
                 entities.find(id)->second.move(1.0f, 0.0f);
             }
@@ -157,7 +158,7 @@ void AGame::moveBullets() {
     }
 }
 
-void AGame::checkCollisions(GeneralEntity::EntityType typeA, GeneralEntity::EntityType typeB, float collisionThreshold) {
+void AGame::checkCollisions(GeneralEntity::EntityType typeA, GeneralEntity::EntityType typeB, float collisionThreshold, EngineFrame &frame) {
     auto tempEntities = entities; // Copy to avoid iterator invalidation
 
     for (const auto& [idA, entityA] : tempEntities) {
@@ -171,14 +172,14 @@ void AGame::checkCollisions(GeneralEntity::EntityType typeA, GeneralEntity::Enti
             float distance = std::sqrt(std::pow(posXB - posXA, 2) + std::pow(posXB - posXA, 2));
 
             if (distance < collisionThreshold) {
-                killEntity(idA);
-                killEntity(idB);
+                killEntity(idA, frame);
+                killEntity(idB, frame);
             }
         }
     }
 }
 
-void AGame::moveEnemies() {
+void AGame::moveEnemies(EngineFrame &frame) {
     static int direction = 0;
     const float moveDistance = 1.0f;
 
@@ -198,7 +199,7 @@ void AGame::moveEnemies() {
 
             if (rand() % 100 < 0.1) {
                 auto[x, y] = getEntityPosition(id);
-                spawnEntity(GeneralEntity::EntityType::Bullet, x + 50.0f, y + 25.0f);
+                spawnEntity(GeneralEntity::EntityType::Bullet, x + 50.0f, y + 25.0f, frame);
             }
         }
     }

@@ -165,6 +165,7 @@ void RType::Client::parseMessage(std::string packet_data)
         return;
     }
 
+    std::cout << "[DEBUG] Parsing packet data: " << packet_data << std::endl;
     std::stringstream ss(packet_data);
     std::string packet_segment;
 

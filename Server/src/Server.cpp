@@ -112,7 +112,7 @@ std::string RType::Server::createPacket(const Network::PacketType& type, const s
 {
     std::string packet_str;
     std::string packet_data = data.empty() ? "-1;-1;-1/" : data;
-    std::cout << "[DEBUG] Creating packet with type: " << static_cast<int>(type) << " and data: " << packet_data << std::endl;
+    //std::cout << "[DEBUG] Creating packet with type: " << static_cast<int>(type) << " and data: " << packet_data << std::endl;
 
     packet_str.push_back(static_cast<uint8_t>(type));
     packet_str.push_back(static_cast<uint8_t>(';'));
@@ -186,23 +186,18 @@ Network::DisconnectData RType::Server::disconnectData(boost::asio::ip::udp::endp
 }
 
 void RType::Server::run() {
-    const std::chrono::milliseconds frameInterval(16);
-    auto lastSendTime = std::chrono::steady_clock::now();
-
     while (true) {
-        auto now = std::chrono::steady_clock::now();
-        std::chrono::milliseconds elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastSendTime);
-
-        // Check if there are frames to send and if it's the right time to send
         server_mutex.lock();
-        if (!m_game->getEngineFrames().empty() && elapsedTime >= frameInterval) {
+        if (!m_game->getEngineFrames().empty()) {
             auto it = m_game->getEngineFrames().end();
             --it;
             EngineFrame frame = it->second;
-            std::cout << "[DEBUG] Sending frame " << it->first << std::endl;
-            PacketFactory(frame);
-            SendFrame(frame);
-            lastSendTime = now;
+            if (!frame.sent) {
+                std::cout << "[DEBUG] Sending frame: " << it->first << std::endl;
+                PacketFactory(frame);
+                SendFrame(frame);
+                it->second.sent = true;
+            }
         }
         server_mutex.unlock();
     }
@@ -236,8 +231,8 @@ void RType::Server::PacketFactory(EngineFrame &frame)
 }
 
 void RType::Server::SendFrame(EngineFrame &frame) {
-    if (!frame.frameInfos.empty())
-        Broadcast(frame.frameInfos);
+    std::cout << "[DEBUG] Sending frame: " << frame.frameInfos << std::endl;
+    Broadcast(frame.frameInfos);
 }
 
 void RType::Server::start_send_timer() {

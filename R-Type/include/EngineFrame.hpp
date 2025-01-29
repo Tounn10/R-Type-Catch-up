@@ -14,6 +14,7 @@
 class EngineFrame {
 public:
     std::string frameInfos;
+    bool sent = false;
 };
 
 #endif // ENGINEFRAME_HPP

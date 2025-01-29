@@ -11,12 +11,12 @@ class GameState : public AGame {
 public:
     GameState(RType::Server* server);
 
-    void initializeplayers(int numPlayers);
-    void update() override;
+    void initializeplayers(int numPlayers, EngineFrame &frame);
+    void update(EngineFrame &frame) override;
     void handlePlayerMove(int playerId, int actionId) override;
     bool isBossSpawned() const;
     bool areEnemiesCleared() const;
-    void startNextWave();
+    void startNextWave(EngineFrame &frame);
     void run(int numPlayers);
 
     int currentWave;
@@ -32,7 +32,7 @@ private:
     sf::Clock frameClock;
     const sf::Time frameDuration = sf::milliseconds(10);
 
-    void spawnEnemiesRandomly();
+    void spawnEnemiesRandomly(EngineFrame &frame);
     RType::Server* m_server; // Pointer to RType::Server
     int nextEnemyId;
     int nextBossId;

@@ -29,6 +29,7 @@ namespace RType {
 
 class AGame : public IGame {
     protected:
+        int id_to_set = 0;
         std::vector<PlayerAction> playerActions; // Shared player action system
         std::map<int, GeneralEntity> entities;
         std::map<int, EngineFrame> engineFrames;
@@ -42,7 +43,7 @@ class AGame : public IGame {
 
         // Implement player action management functions
         void addPlayerAction(int playerId, int actionId) override;
-        void processPlayerActions() override;
+        void processPlayerActions(EngineFrame &frame) override;
         void deletePlayerAction() override;
         const std::vector<PlayerAction>& getPlayerActions() const override;
 
@@ -51,13 +52,13 @@ class AGame : public IGame {
         std::map<int, EngineFrame>& getEngineFrames() override;
 
         // Implement entity spawn and delete management functions
-        void spawnEntity(GeneralEntity::EntityType type, float x, float y) override;
-        void killEntity(int entityId) override;
+        void spawnEntity(GeneralEntity::EntityType type, float x, float y, EngineFrame &frame) override;
+        void killEntity(int entityId, EngineFrame &frame) override;
 
         void registerComponents();
-        void moveBullets() override;
-        void moveEnemies() override;
-        void checkCollisions(GeneralEntity::EntityType typeA, GeneralEntity::EntityType typeB, float collisionThreshold) override;
+        void moveBullets(EngineFrame &frame) override;
+        void moveEnemies(EngineFrame &frame) override;
+        void checkCollisions(GeneralEntity::EntityType typeA, GeneralEntity::EntityType typeB, float collisionThreshold, EngineFrame &frame) override;
 };
 
 #endif // AGAME_HPP
