@@ -41,9 +41,7 @@ void RType::Server::send_to_client(const std::string& message, const udp::endpoi
     socket_.async_send_to(
         boost::asio::buffer(message), client_endpoint,
         [](const boost::system::error_code& error, std::size_t bytes_transferred) {
-            if (!error) {
-                std::cout << "[DEBUG] Message sent to client." << std::endl;
-            } else {
+            if (error) {
                 std::cerr << "[ERROR] Error sending to client: " << error.message() << std::endl;
             }
         });
@@ -186,14 +184,16 @@ Network::DisconnectData RType::Server::disconnectData(boost::asio::ip::udp::endp
 }
 
 void RType::Server::run() {
+    std::chrono::steady_clock::time_point start_time = std::chrono::steady_clock::now();
+
     while (true) {
         server_mutex.lock();
-        if (!m_game->getEngineFrames().empty()) {
+        if (!m_game->getEngineFrames().empty() && std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start_time).count() > 600) {
             auto it = m_game->getEngineFrames().end();
             --it;
             EngineFrame frame = it->second;
+            frame.frameInfos = std::to_string(it->first) + ":" + frame.frameInfos;
             if (!frame.sent) {
-                std::cout << "[DEBUG] Sending frame: " << it->first << std::endl;
                 PacketFactory(frame);
                 SendFrame(frame);
                 it->second.sent = true;
@@ -231,7 +231,6 @@ void RType::Server::PacketFactory(EngineFrame &frame)
 }
 
 void RType::Server::SendFrame(EngineFrame &frame) {
-    std::cout << "[DEBUG] Sending frame: " << frame.frameInfos << std::endl;
     Broadcast(frame.frameInfos);
 }
 

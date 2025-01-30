@@ -36,15 +36,13 @@ void GameState::run(int numPlayers) {
     engineFrames.emplace(frameId++, firstFrame);
 
     while (true) {
-        if (frameClock.getElapsedTime() >= frameDuration)
-        {
+        if (frameClock.getElapsedTime() >= frameDuration) {
             frameClock.restart();
             EngineFrame new_frame;
             //Check if all enemies are cleared and start the next wave or spawn the boss
             update(new_frame);
             m_server->server_mutex.lock();
             engineFrames.emplace(frameId++, new_frame);
-            std::cout << "Frame ID: " << frameId++ << std::endl;
             m_server->server_mutex.unlock();
             //if (engineFrames.size() > 60) { This needs to go to the server as well as the clock
             //    m_server->SendFrame(engineFrames.at(last_frame_sent++));

@@ -51,8 +51,8 @@ namespace RType {
 
     class Frame {
     public:
+        int frameId;
         std::vector<PacketElement> entityPackets;
-        PacketElement gameStatePacket;
     };
 
     class SpriteElement {
@@ -81,7 +81,10 @@ namespace RType {
         void loadTextures();
         void drawSprites(sf::RenderWindow& window);
         void updateSpritePosition(Frame &frame);
+        void UpdateGameStateLayers();
         void parseMessage(std::string packet_data);
+        void parseFramePacket(const std::string& packet_data);
+        void parseGameStatePacket(const std::string& packet_data);
         void destroySprite(Frame &frame);
         void processEvents(sf::RenderWindow& window);
         void initLobbySprites(sf::RenderWindow& window);
@@ -95,15 +98,17 @@ namespace RType {
         boost::asio::ip::udp::endpoint server_endpoint_;
         std::array<char, MAX_LENGTH> recv_buffer_;
         std::string received_data;
-        std::mutex mutex_;
+        std::mutex mutex_last_received_frame_id;
         std::thread receive_thread_;
         boost::asio::io_context& io_context_;
         std::vector<SpriteElement> sprites_;
         std::unordered_map<SpriteType, sf::Texture> textures_;
         std::vector<PacketElement> packets;
         std::map<int, Frame> frameMap;
+        PacketElement gameStatePacket;
         sf::Clock frameClock;
-        unsigned long currentFrameIndex = 0;
+        unsigned long currentFrameIndex = -1;
+        int last_received_frame_id = -1;
         const sf::Time frameDuration = sf::milliseconds(10);
         sf::SoundBuffer buffer_background_;
         sf::Sound sound_background_;

@@ -55,10 +55,8 @@ void RType::Client::start_receive()
 void RType::Client::handle_receive(const boost::system::error_code& error, std::size_t bytes_transferred)
 {
     if (!error || error == boost::asio::error::message_size) {
-        //mutex_.lock();
         received_data.assign(recv_buffer_.data(), bytes_transferred);
         parseMessage(received_data);
-
         start_receive();
     } else {
         std::cerr << "[DEBUG] Error receiving: " << error.message() << std::endl;
@@ -80,7 +78,7 @@ void RType::Client::run_receive()
     io_context_.run();
 }
 
-void RType::Client::createSprite(Frame& frame) {
+void RType::Client::createSprite(Frame& frame) { // Another function just to add a sprite in case the packet was lost and the entity was not created
     static const std::unordered_map<int, SpriteType> actionToSpriteType = {
         {24, SpriteType::Player},
         {22, SpriteType::Enemy},
@@ -125,11 +123,12 @@ void RType::Client::updateSpritePosition(Frame& frame) {
             }
         }
     }
+}
 
-    if (frame.gameStatePacket.action == 31) {
+void RType::Client::UpdateGameStateLayers() {
+    if (gameStatePacket.action == 31) {
         initLobbySprites(this->window);
-    } else if (frame.gameStatePacket.action == 3)
-    {
+    } else if (gameStatePacket.action == 3) {
         for (auto it = sprites_.begin(); it != sprites_.end(); ++it) {
             if (it->id == -101) {
                 sprites_.erase(it);
@@ -137,6 +136,7 @@ void RType::Client::updateSpritePosition(Frame& frame) {
             }
         }
     }
+    gameStatePacket.action = -1;
 }
 
 void RType::Client::loadTextures() //make sure to have the right textures in the right folder
@@ -157,7 +157,10 @@ void RType::Client::drawSprites(sf::RenderWindow& window)
 }
 
 
-
+//error handling if frame ID received is not the correct one, send a packet to server so it sends again
+//Modify the packet form to include the frame ID and also send empty frames to synchronise the client and server FrameIds
+//Then server keeps 60 frames forward thanks to client display loop
+//parseMessage related  to server send rate does not rely on the client clock in the display loop
 void RType::Client::parseMessage(std::string packet_data)
 {
     if (packet_data.empty()) {
@@ -165,13 +168,38 @@ void RType::Client::parseMessage(std::string packet_data)
         return;
     }
 
-    std::cout << "[DEBUG] Parsing packet data: " << packet_data << std::endl;
-    std::stringstream ss(packet_data);
-    std::string packet_segment;
+    if (packet_data.find(':') != std::string::npos) {
+        parseFramePacket(packet_data);
+    } else {
+        parseGameStatePacket(packet_data);
+    }
+}
 
-    while (std::getline(ss, packet_segment, '/')) {
+void RType::Client::parseFramePacket(const std::string& packet_data)
+{
+    std::stringstream ss(packet_data);
+    std::string frame_segment;
+
+    std::getline(ss, frame_segment, ':');
+    int frame_id;
+    try {
+        frame_id = std::stoi(frame_segment);
+    } catch (const std::exception& e) {
+        std::cerr << "[ERROR] Invalid Frame ID format: " << frame_segment << std::endl;
+        return;
+    }
+
+    Frame new_frame;
+    new_frame.frameId = frame_id;
+
+    if (ss.eof()) {
+        frameMap.emplace(frame_id, new_frame);
+        return;
+    }
+
+    while (std::getline(ss, frame_segment, '/')) {
         std::vector<std::string> elements;
-        std::stringstream packet_ss(packet_segment);
+        std::stringstream packet_ss(frame_segment);
         std::string segment;
 
         while (std::getline(packet_ss, segment, ';')) {
@@ -179,36 +207,71 @@ void RType::Client::parseMessage(std::string packet_data)
         }
 
         if (elements.size() != 4) {
-            std::cerr << "[ERROR] Invalid packet format: " << packet_segment << std::endl;
+            std::cerr << "[ERROR] Invalid subpacket format: " << frame_segment << std::endl;
             continue;
         }
 
         try {
             PacketElement packetElement;
-            uint8_t packet_type = static_cast<uint8_t>(packet_segment[0]);
+            uint8_t packet_type = static_cast<uint8_t>(frame_segment[0]);
             packetElement.action = static_cast<int>(packet_type);
             packetElement.server_id = std::stoi(elements[1]);
             packetElement.new_x = std::stof(elements[2]);
             packetElement.new_y = std::stof(elements[3]);
 
-            Frame new_frame;
-
-            // Add the packetElement to the appropriate vector in the Frame object
-            if (packetElement.action == 31 || packetElement.action == 3) {
-                new_frame.gameStatePacket = packetElement;
-            } else {
-                new_frame.entityPackets.push_back(packetElement);
-            }
-
-            std::cout << "[DEBUG] Action: " << packetElement.action << std::endl;
-            std::cout << "[DEBUG] Server ID: " << packetElement.server_id << std::endl;
-            std::cout << "[DEBUG] New X: " << packetElement.new_x << std::endl;
-            std::cout << "[DEBUG] New Y: " << packetElement.new_y << std::endl;
-            frameMap.emplace(frameMap.size(), new_frame);
+            new_frame.entityPackets.push_back(packetElement);
 
         } catch (const std::exception& e) {
-            std::cerr << "[ERROR] Failed to parse packet data: " << e.what() << std::endl;
+            std::cerr << "[ERROR] Failed to parse subpacket: " << e.what() << std::endl;
         }
+    }
+
+    // Frame Loss Detection
+    //if (last_received_frame_id != -1 && frame_id != last_received_frame_id + 1) {
+    //    std::cerr << "[WARNING] Frame skipped! Expected " << last_received_frame_id + 1
+    //              << " but received " << frame_id << ". Requesting resend..." << std::endl;
+        // requestMissingFrame(last_received_frame_id + 1);
+    //}
+    mutex_last_received_frame_id.lock();
+    last_received_frame_id = frame_id;
+    mutex_last_received_frame_id.unlock();
+    frameMap.emplace(new_frame.frameId, new_frame);
+}
+
+void RType::Client::parseGameStatePacket(const std::string& packet_data)
+{
+    std::stringstream ss(packet_data);
+    std::vector<std::string> elements;
+    std::string segment;
+
+    while (std::getline(ss, segment, ';')) {
+        elements.push_back(segment);
+    }
+
+    if (elements.size() != 4) {
+        std::cerr << "[ERROR] Invalid game state packet format: " << packet_data << std::endl;
+        return;
+    }
+
+    try {
+        PacketElement packetElement;
+        uint8_t packet_type = static_cast<uint8_t>(packet_data[0]);
+        packetElement.action = static_cast<int>(packet_type);
+        packetElement.server_id = std::stoi(elements[1]);
+        packetElement.new_x = std::stof(elements[2]);
+        packetElement.new_y = std::stof(elements[3]);
+
+        if (packetElement.action == 31 || packetElement.action == 3) {
+            gameStatePacket = packetElement;
+        }
+
+        std::cout << "[DEBUG] Received Game State Update - Action: " << packetElement.action
+                  << ", Server ID: " << packetElement.server_id
+                  << ", X: " << packetElement.new_x
+                  << ", Y: " << packetElement.new_y << std::endl;
+
+    } catch (const std::exception& e) {
+        std::cerr << "[ERROR] Failed to parse game state packet: " << e.what() << std::endl;
     }
 }
 
@@ -235,27 +298,37 @@ int RType::Client::main_loop()
     LoadSound();
 
     while (this->window.isOpen()) {
-        processEvents(this->window);
-
-        if (frameClock.getElapsedTime() >= frameDuration) {
-            frameClock.restart();
-            if (!frameMap.empty() && currentFrameIndex + 1 < frameMap.size()) {
-                currentFrameIndex += 1;
-            }
-
-            auto it = frameMap.begin();
-            std::advance(it, currentFrameIndex);
-            Frame& currentFrame = it->second;
-            std::cout << "[DEBUG] Current frame index: " << currentFrameIndex << std::endl;
-            createSprite(currentFrame);
-            destroySprite(currentFrame);
-            updateSpritePosition(currentFrame);
+        if (last_received_frame_id != -1 && currentFrameIndex == -1) {
+            mutex_last_received_frame_id.lock();
+            currentFrameIndex = last_received_frame_id;
+            mutex_last_received_frame_id.unlock();
         }
-        //mutex_.unlock();
+        processEvents(this->window);
+        UpdateGameStateLayers();
 
-        this->window.clear();
-        drawSprites(window);
-        this->window.display();
+        if (frameClock.getElapsedTime().asMilliseconds() >= frameDuration.asMilliseconds()) {
+            if (frameClock.getElapsedTime().asMilliseconds() > frameDuration.asMilliseconds()) {
+                std::cerr << "[WARNING] Frame took too long to process: " << frameClock.getElapsedTime().asMilliseconds() << "ms" << std::endl;
+            }
+            sf::Time elapsed = frameClock.getElapsedTime() - frameDuration; // Mettre compensation pour éviter le décalage client/serveur (implementer des 2 cotés)
+            frameClock.restart();
+
+            if (!frameMap.empty()) {
+
+                auto it = frameMap.begin();
+                std::advance(it, currentFrameIndex);
+
+                Frame& currentFrame = it->second;
+                //std::cout << "[DEBUG] Current frame index: " << currentFrameIndex << std::endl;
+                createSprite(currentFrame);
+                destroySprite(currentFrame);
+                updateSpritePosition(currentFrame);
+                currentFrameIndex++;
+            }
+            this->window.clear();
+            drawSprites(window);
+            this->window.display();
+        }
     }
     sendExitPacket();
     return 0;
@@ -323,22 +396,18 @@ void RType::Client::handleKeyPress(sf::Keyboard::Key key, sf::RenderWindow& wind
 {
     switch (key) {
         case sf::Keyboard::Right:
-            std::cout << "[DEBUG] Sending Right: " << std::endl;
             send_queue_.push(createPacket(Network::PacketType::PLAYER_RIGHT));
             break;
 
         case sf::Keyboard::Left:
-            std::cout << "[DEBUG] Sending Left: " << std::endl;
             send_queue_.push(createPacket(Network::PacketType::PLAYER_LEFT));
             break;
 
         case sf::Keyboard::Up:
-            std::cout << "[DEBUG] Sending Up: " << std::endl;
             send_queue_.push(createPacket(Network::PacketType::PLAYER_UP));
             break;
 
         case sf::Keyboard::Down:
-            std::cout << "[DEBUG] Sending Down: " << std::endl;
             send_queue_.push(createPacket(Network::PacketType::PLAYER_DOWN));
             break;
 
