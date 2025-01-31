@@ -89,11 +89,17 @@ void RType::Client::createSprite(Frame& frame) { // Another function just to add
     for (auto& packet : frame.entityPackets) {
         auto it = actionToSpriteType.find(packet.action);
         if (it != actionToSpriteType.end()) {
-            SpriteElement spriteElement;
-            spriteElement.sprite.setTexture(textures_[it->second]); // Use mapped SpriteType
-            spriteElement.sprite.setPosition(packet.new_x, packet.new_y);
-            spriteElement.id = packet.server_id;
-            sprites_.push_back(spriteElement);
+            auto spriteIt = std::find_if(sprites_.begin(), sprites_.end(), [&](const SpriteElement& sprite) {
+                return sprite.id == packet.server_id;
+            });
+
+            if (spriteIt == sprites_.end()) {
+                SpriteElement spriteElement;
+                spriteElement.sprite.setTexture(textures_[it->second]);
+                spriteElement.sprite.setPosition(packet.new_x, packet.new_y);
+                spriteElement.id = packet.server_id;
+                sprites_.push_back(spriteElement);
+            }
         }
     }
 }

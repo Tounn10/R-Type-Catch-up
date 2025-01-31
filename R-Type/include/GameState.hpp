@@ -16,6 +16,7 @@ public:
     void handlePlayerMove(int playerId, int actionId) override;
     bool isBossSpawned() const;
     bool areEnemiesCleared() const;
+    int countPlayers() const;
     void startNextWave(EngineFrame &frame);
     void run(int numPlayers);
 

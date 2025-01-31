@@ -44,6 +44,7 @@ namespace RType {
         void bossPacketFactory(EngineFrame &frame);
         void SendFrame(EngineFrame &frame);
         void PacketFactory(EngineFrame &frame);
+        void sendAllEntitiesToNewClients(EngineFrame &frame);
         void run();
         bool hasPositionChanged(int id, float x, float y, std::unordered_map<int, std::pair<float, float>>& lastKnownPositions);
         Network::ReqConnect reqConnectData(boost::asio::ip::udp::endpoint& client_endpoint);

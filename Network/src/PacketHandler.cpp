@@ -126,28 +126,8 @@ void PacketHandler::handlePlayerJoin(const Network::Packet &packet)
 
 void PacketHandler::handlePlayerShoot(const Network::Packet &packet)
 {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    std::cout << "[PacketHandler] Handeled PLAYER_SHOOT packet." << std::endl;
-    const auto& clients = m_server.getClients();
-    const udp::endpoint& clientEndpoint = m_server.getRemoteEndpoint();
-
-    size_t playerId = -1;
-    bool found = false;
-    {
-        std::lock_guard<std::mutex> lock(m_server.clients_mutex_);
-
-        for (const auto& [id, client] : clients) {
-            if (client.getEndpoint() == clientEndpoint) {
-                playerId = id;
-                found = true;
-                break;
-            }
-        }
-    } if (found) {
-        handlePlayerAction(packet, 5);
-    } else {
-        std::cerr << "[PacketHandler] Client endpoint not found in client list." << std::endl;
-    }
+    handlePlayerAction(packet, 5);
+    std::cerr << "[PacketHandler] Client endpoint not found in client list." << std::endl;
 }
 
 void PacketHandler::handlePlayerHit(const Network::Packet &packet)

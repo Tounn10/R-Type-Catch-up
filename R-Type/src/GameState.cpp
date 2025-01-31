@@ -11,13 +11,14 @@ GameState::GameState(RType::Server* server)
       distTime(1000, 5000), currentWave(0), enemiesPerWave(5), m_server(server), nextEnemyId(0), nextBossId(0) {}
 
 void GameState::initializeplayers(int numPlayers, EngineFrame &frame) {
-    for (int i = 0; i < numPlayers; ++i) {
+    for (int i = countPlayers(); i < numPlayers; ++i) {
         spawnEntity(GeneralEntity::EntityType::Player, 100.0f * (i + 1.0f), 100.0f, frame);
     }
 }
 
 void GameState::update(EngineFrame &frame) {
     registry.run_systems();
+    initializeplayers(m_server->getClients().size(), frame);
     processPlayerActions(frame);
     //if (areEnemiesCleared()) {
     //    spawnEnemiesRandomly(new_frame);
@@ -30,10 +31,6 @@ void GameState::update(EngineFrame &frame) {
 void GameState::run(int numPlayers) {
     int frameId = 0;
     int last_frame_sent = 0;
-
-    EngineFrame firstFrame;
-    initializeplayers(numPlayers, firstFrame);
-    engineFrames.emplace(frameId++, firstFrame);
 
     while (true) {
         if (frameClock.getElapsedTime() >= frameDuration) {
@@ -71,6 +68,12 @@ void GameState::handlePlayerMove(int playerId, int actionId) {
     } else {
         std::cerr << "[ERROR] Player ID " << playerId << " not found." << std::endl;
     }
+}
+
+int GameState::countPlayers() const {
+    return std::count_if(entities.begin(), entities.end(), [](const auto& pair) {
+        return pair.second.getType() == GeneralEntity::EntityType::Player;
+    });
 }
 
 bool GameState::isBossSpawned() const {

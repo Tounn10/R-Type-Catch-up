@@ -183,8 +183,36 @@ Network::DisconnectData RType::Server::disconnectData(boost::asio::ip::udp::endp
     return data;
 }
 
+void RType::Server::sendAllEntitiesToNewClients(EngineFrame &frame) {
+    static const std::unordered_map<GeneralEntity::EntityType, Network::PacketType> entityToPacketType = {
+        {GeneralEntity::EntityType::Player, Network::PacketType::CREATE_PLAYER},
+        {GeneralEntity::EntityType::Enemy, Network::PacketType::CREATE_ENEMY},
+        {GeneralEntity::EntityType::Boss, Network::PacketType::CREATE_BOSS},
+        {GeneralEntity::EntityType::Bullet, Network::PacketType::CREATE_BULLET}
+    };
+
+    for (const auto& [entityId, entity] : m_game->getEntities()) {
+        try {
+            auto [x, y] = m_game->getEntityPosition(entityId);
+
+            auto it = entityToPacketType.find(entity.getType());
+            if (it != entityToPacketType.end()) {
+                Network::PacketType packetType = it->second;
+                std::string entityPacket = std::to_string(entityId) + ";" + std::to_string(x) + ";" + std::to_string(y) + "/";
+                frame.frameInfos += createPacket(packetType, entityPacket);
+            } else {
+                std::cerr << "[WARNING] Unknown entity type for ID: " << entityId << std::endl;
+            }
+        } catch (const std::out_of_range& e) {
+            std::cerr << "[ERROR] Invalid entity ID: " << entityId << " - " << e.what() << std::endl;
+        }
+    }
+}
+
+
 void RType::Server::run() {
     std::chrono::steady_clock::time_point start_time = std::chrono::steady_clock::now();
+    size_t lastClientCount = clients_.size();
 
     while (true) {
         server_mutex.lock();
@@ -193,6 +221,10 @@ void RType::Server::run() {
             --it;
             EngineFrame frame = it->second;
             frame.frameInfos = std::to_string(it->first) + ":" + frame.frameInfos;
+            if (clients_.size() > lastClientCount) {
+                lastClientCount = clients_.size();
+                sendAllEntitiesToNewClients(frame);
+            }
             if (!frame.sent) {
                 PacketFactory(frame);
                 SendFrame(frame);
