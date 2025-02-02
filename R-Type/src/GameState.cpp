@@ -37,8 +37,8 @@ void GameState::run(int numPlayers) {
             frameClock.restart();
             EngineFrame new_frame;
             //Check if all enemies are cleared and start the next wave or spawn the boss
-            update(new_frame);
             m_server->server_mutex.lock();
+            update(new_frame);
             engineFrames.emplace(frameId++, new_frame);
             m_server->server_mutex.unlock();
             //if (engineFrames.size() > 60) { This needs to go to the server as well as the clock

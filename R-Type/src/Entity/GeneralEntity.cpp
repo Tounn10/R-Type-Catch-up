@@ -7,7 +7,7 @@
 #include "Projectile.hpp"
 #include <iostream>
 
-GeneralEntity::GeneralEntity(Registry& registry, EntityType type, float x, float y) : registry(registry) {
+GeneralEntity::GeneralEntity(Registry& registry, EntityType type, float x, float y) : registry(registry), type(type) {
     entity = this->registry.spawn_entity();
     addComponents(type, x, y);
 }

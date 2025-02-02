@@ -194,7 +194,6 @@ void RType::Server::sendAllEntitiesToNewClients(EngineFrame &frame) {
     for (const auto& [entityId, entity] : m_game->getEntities()) {
         try {
             auto [x, y] = m_game->getEntityPosition(entityId);
-
             auto it = entityToPacketType.find(entity.getType());
             if (it != entityToPacketType.end()) {
                 Network::PacketType packetType = it->second;
@@ -220,12 +219,12 @@ void RType::Server::run() {
             auto it = m_game->getEngineFrames().end();
             --it;
             EngineFrame frame = it->second;
-            frame.frameInfos = std::to_string(it->first) + ":" + frame.frameInfos;
-            if (clients_.size() > lastClientCount) {
-                lastClientCount = clients_.size();
-                sendAllEntitiesToNewClients(frame);
-            }
             if (!frame.sent) {
+                frame.frameInfos = std::to_string(it->first) + ":" + frame.frameInfos;
+                if (clients_.size() > lastClientCount) { // may have concurrency programming problem there to check
+                    lastClientCount = clients_.size();
+                    sendAllEntitiesToNewClients(frame);
+                }
                 PacketFactory(frame);
                 SendFrame(frame);
                 it->second.sent = true;

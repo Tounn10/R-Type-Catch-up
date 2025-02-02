@@ -97,7 +97,6 @@ std::pair<float, float> AGame::getEntityPosition(int entityId) const
 
 void AGame::spawnEntity(GeneralEntity::EntityType type, float x, float y, EngineFrame &frame) {
     int entityId = id_to_set;
-
     if (type == GeneralEntity::EntityType::Bullet) {
         x += 50.0f;
         y += 25.0f;

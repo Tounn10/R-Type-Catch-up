@@ -32,6 +32,8 @@ RType::Client::~Client()
     if (receive_thread_.joinable()) {
         receive_thread_.join();
     }
+    frameMap.clear();
+    sprites_.clear();
 }
 
 void RType::Client::send(const std::string& message)
@@ -78,7 +80,7 @@ void RType::Client::run_receive()
     io_context_.run();
 }
 
-void RType::Client::createSprite(Frame& frame) { // Another function just to add a sprite in case the packet was lost and the entity was not created
+void RType::Client::createSprite(Frame& frame) {
     static const std::unordered_map<int, SpriteType> actionToSpriteType = {
         {24, SpriteType::Player},
         {22, SpriteType::Enemy},
@@ -86,7 +88,12 @@ void RType::Client::createSprite(Frame& frame) { // Another function just to add
         {23, SpriteType::Boss}
     };
 
+    std::cout << "[DEBUG] Processing frame with ID: " << frame.frameId << std::endl;
+
     for (auto& packet : frame.entityPackets) {
+        std::cout << "[DEBUG] Packet - Action: " << packet.action << ", Server ID: " << packet.server_id
+                  << ", New X: " << packet.new_x << ", New Y: " << packet.new_y << std::endl;
+
         auto it = actionToSpriteType.find(packet.action);
         if (it != actionToSpriteType.end()) {
             auto spriteIt = std::find_if(sprites_.begin(), sprites_.end(), [&](const SpriteElement& sprite) {
@@ -94,12 +101,17 @@ void RType::Client::createSprite(Frame& frame) { // Another function just to add
             });
 
             if (spriteIt == sprites_.end()) {
+                std::cout << "[DEBUG] Creating new sprite for Server ID: " << packet.server_id << std::endl;
                 SpriteElement spriteElement;
                 spriteElement.sprite.setTexture(textures_[it->second]);
                 spriteElement.sprite.setPosition(packet.new_x, packet.new_y);
                 spriteElement.id = packet.server_id;
                 sprites_.push_back(spriteElement);
+            } else {
+                std::cout << "[DEBUG] Sprite with Server ID: " << packet.server_id << " already exists." << std::endl;
             }
+        } else {
+            std::cout << "[DEBUG] Unknown action type: " << packet.action << std::endl;
         }
     }
 }
@@ -186,6 +198,8 @@ void RType::Client::parseFramePacket(const std::string& packet_data)
     std::stringstream ss(packet_data);
     std::string frame_segment;
 
+    std::cout << "[DEBUG] Parsing Frame Packet: " << packet_data << std::endl;
+
     std::getline(ss, frame_segment, ':');
     int frame_id;
     try {
@@ -199,7 +213,9 @@ void RType::Client::parseFramePacket(const std::string& packet_data)
     new_frame.frameId = frame_id;
 
     if (ss.eof()) {
+        mutex_frameMap.lock();
         frameMap.emplace(frame_id, new_frame);
+        mutex_frameMap.unlock();
         return;
     }
 
@@ -241,7 +257,9 @@ void RType::Client::parseFramePacket(const std::string& packet_data)
     mutex_last_received_frame_id.lock();
     last_received_frame_id = frame_id;
     mutex_last_received_frame_id.unlock();
+    mutex_frameMap.lock();
     frameMap.emplace(new_frame.frameId, new_frame);
+    mutex_frameMap.unlock();
 }
 
 void RType::Client::parseGameStatePacket(const std::string& packet_data)
@@ -267,15 +285,9 @@ void RType::Client::parseGameStatePacket(const std::string& packet_data)
         packetElement.new_x = std::stof(elements[2]);
         packetElement.new_y = std::stof(elements[3]);
 
-        if (packetElement.action == 31 || packetElement.action == 3) {
+        if (packetElement.action == 31 || packetElement.action == 3 || packetElement.action == 30) {
             gameStatePacket = packetElement;
         }
-
-        std::cout << "[DEBUG] Received Game State Update - Action: " << packetElement.action
-                  << ", Server ID: " << packetElement.server_id
-                  << ", X: " << packetElement.new_x
-                  << ", Y: " << packetElement.new_y << std::endl;
-
     } catch (const std::exception& e) {
         std::cerr << "[ERROR] Failed to parse game state packet: " << e.what() << std::endl;
     }
@@ -320,12 +332,10 @@ int RType::Client::main_loop()
             frameClock.restart();
 
             if (!frameMap.empty()) {
-
-                auto it = frameMap.begin();
-                std::advance(it, currentFrameIndex);
-
-                Frame& currentFrame = it->second;
-                //std::cout << "[DEBUG] Current frame index: " << currentFrameIndex << std::endl;
+                mutex_frameMap.lock();
+                auto it = frameMap.find(currentFrameIndex);
+                Frame currentFrame = it->second;
+                mutex_frameMap.unlock();
                 createSprite(currentFrame);
                 destroySprite(currentFrame);
                 updateSpritePosition(currentFrame);

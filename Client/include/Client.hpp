@@ -99,6 +99,7 @@ namespace RType {
         std::array<char, MAX_LENGTH> recv_buffer_;
         std::string received_data;
         std::mutex mutex_last_received_frame_id;
+        std::mutex mutex_frameMap;
         std::thread receive_thread_;
         boost::asio::io_context& io_context_;
         std::vector<SpriteElement> sprites_;
