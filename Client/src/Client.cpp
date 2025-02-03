@@ -174,11 +174,6 @@ void RType::Client::drawSprites(sf::RenderWindow& window)
     }
 }
 
-
-//error handling if frame ID received is not the correct one, send a packet to server so it sends again
-//Modify the packet form to include the frame ID and also send empty frames to synchronise the client and server FrameIds
-//Then server keeps 60 frames forward thanks to client display loop
-//parseMessage related  to server send rate does not rely on the client clock in the display loop
 void RType::Client::parseMessage(std::string packet_data)
 {
     if (packet_data.empty()) {
@@ -317,9 +312,9 @@ int RType::Client::main_loop()
 
     while (this->window.isOpen()) {
         if (last_received_frame_id != -1 && currentFrameIndex == -1) {
-            mutex_last_received_frame_id.lock();
-            currentFrameIndex = last_received_frame_id;
-            mutex_last_received_frame_id.unlock();
+            mutex_frameMap.lock();
+            currentFrameIndex = frameMap.begin()->first;
+            mutex_frameMap.unlock();
         }
         processEvents(this->window);
         UpdateGameStateLayers();

@@ -108,7 +108,7 @@ namespace RType {
         std::map<int, Frame> frameMap;
         PacketElement gameStatePacket;
         sf::Clock frameClock;
-        unsigned long currentFrameIndex = -1;
+        int currentFrameIndex = -1;
         int last_received_frame_id = -1;
         const sf::Time frameDuration = sf::milliseconds(10);
         sf::SoundBuffer buffer_background_;

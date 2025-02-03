@@ -221,7 +221,7 @@ void RType::Server::run() {
             EngineFrame frame = it->second;
             if (!frame.sent) {
                 frame.frameInfos = std::to_string(it->first) + ":" + frame.frameInfos;
-                if (clients_.size() > lastClientCount) { // may have concurrency programming problem there to check
+                if (clients_.size() > lastClientCount) {
                     lastClientCount = clients_.size();
                     sendAllEntitiesToNewClients(frame);
                 }
