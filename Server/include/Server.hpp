@@ -45,6 +45,7 @@ namespace RType {
         void SendFrame(EngineFrame &frame);
         void PacketFactory(EngineFrame &frame);
         void sendAllEntitiesToNewClients(EngineFrame &frame);
+        void SendLatencyCheck();
         void run();
         bool hasPositionChanged(int id, float x, float y, std::unordered_map<int, std::pair<float, float>>& lastKnownPositions);
         Network::ReqConnect reqConnectData(boost::asio::ip::udp::endpoint& client_endpoint);
@@ -78,6 +79,8 @@ namespace RType {
         std::queue<std::string> send_queue_; // Add this line
         boost::asio::steady_timer send_timer_; // Add this line
         std::queue<uint32_t> available_ids_;
+        sf::Clock latencyClock;
+        const sf::Time LatencyRefreshDuration = sf::milliseconds(200);
     };
 }
 

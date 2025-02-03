@@ -45,5 +45,6 @@ namespace Network {
         CHANGE = 29,
         GAME_STARTED = 30,
         GAME_NOT_STARTED = 31,
+        LATENCY_CHECK = 32,
     };
 }

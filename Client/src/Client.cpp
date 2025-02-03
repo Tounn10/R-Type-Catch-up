@@ -172,6 +172,7 @@ void RType::Client::drawSprites(sf::RenderWindow& window)
     for (auto& spriteElement : sprites_) {
         window.draw(spriteElement.sprite);
     }
+    window.draw(latencyText);
 }
 
 void RType::Client::parseMessage(std::string packet_data)
@@ -283,6 +284,13 @@ void RType::Client::parseGameStatePacket(const std::string& packet_data)
         if (packetElement.action == 31 || packetElement.action == 3 || packetElement.action == 30) {
             gameStatePacket = packetElement;
         }
+        if (packetElement.action == 32) {
+            auto now = std::chrono::steady_clock::now();
+            auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
+            long long sentTime = packetElement.server_id;
+            long long latency = ms - sentTime;
+            latencyText.setString("Latency: " + std::to_string(latency) + " ms");
+        }
     } catch (const std::exception& e) {
         std::cerr << "[ERROR] Failed to parse game state packet: " << e.what() << std::endl;
     }
@@ -304,11 +312,24 @@ void RType::Client::LoadSound()
     sound_background_.play();
 }
 
+void RType::Client::LoadFont()
+{
+    if (!font.loadFromFile("../assets/test.ttf")) {
+        std::cerr << "Error loading font\n";
+    }
+
+    latencyText.setFont(font);
+    latencyText.setCharacterSize(24);
+    latencyText.setFillColor(sf::Color::White);
+    latencyText.setPosition(10, 10);
+}
+
 int RType::Client::main_loop()
 {
     loadTextures();
     send(createPacket(Network::PacketType::REQCONNECT));
     LoadSound();
+    LoadFont();
 
     while (this->window.isOpen()) {
         if (last_received_frame_id != -1 && currentFrameIndex == -1) {

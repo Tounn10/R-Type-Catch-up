@@ -230,7 +230,21 @@ void RType::Server::run() {
                 it->second.sent = true;
             }
         }
+        SendLatencyCheck();
         server_mutex.unlock();
+    }
+}
+
+void RType::Server::SendLatencyCheck() {
+    if (latencyClock.getElapsedTime() >= LatencyRefreshDuration) {
+        latencyClock.restart();
+        auto now = std::chrono::steady_clock::now();
+        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
+
+        std::string second_part = std::to_string(ms) + ";-1;-1/";
+        std::string packet = createPacket(Network::PacketType::LATENCY_CHECK, second_part);
+
+        Broadcast(packet);
     }
 }
 
