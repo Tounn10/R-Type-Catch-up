@@ -90,7 +90,7 @@ namespace RType {
         void initLobbySprites(sf::RenderWindow& window);
         void LoadSound();
         void LoadFont();
-        void updatePacketLoss(std::map<int, Frame>::iterator it);
+        void updatePacketLoss();
         std::string createMousePacket(Network::PacketType type, int x = 0, int y = 0);
         void start_send_timer();
         void handle_send_timer(const boost::system::error_code& error);

@@ -247,6 +247,7 @@ void RType::Client::parseFramePacket(const std::string& packet_data)
     //              << " but received " << frame_id << ". Requesting resend..." << std::endl;
         // requestMissingFrame(last_received_frame_id + 1);
     //}
+    packetLossCount = frame_id - (last_received_frame_id + 1);
     mutex_last_received_frame_id.lock();
     last_received_frame_id = frame_id;
     mutex_last_received_frame_id.unlock();
@@ -325,11 +326,7 @@ void RType::Client::LoadFont()
     latencyText.setPosition(10, 10);
 }
 
-void RType::Client::updatePacketLoss(std::map<int, Frame>::iterator it) {
-
-    if (it == frameMap.end()) {
-        packetLossCount++;
-    }
+void RType::Client::updatePacketLoss() {
 
     if (packetLossClock.getElapsedTime().asSeconds() >= packetLossDuration.asSeconds()) {
         std::cout << "[INFO] Packet loss in last 10 seconds: " << packetLossCount << std::endl;
@@ -367,7 +364,7 @@ int RType::Client::main_loop()
             if (!frameMap.empty()) {
                 mutex_frameMap.lock();
                 auto it = frameMap.find(currentFrameIndex);
-                updatePacketLoss(it);
+                updatePacketLoss();
                 Frame currentFrame = it->second;
                 mutex_frameMap.unlock();
                 createSprite(currentFrame);
