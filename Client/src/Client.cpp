@@ -88,8 +88,6 @@ void RType::Client::createSprite(Frame& frame) {
         {23, SpriteType::Boss}
     };
 
-    std::cout << "[DEBUG] Processing frame with ID: " << frame.frameId << std::endl;
-
     for (auto& packet : frame.entityPackets) {
         std::cout << "[DEBUG] Packet - Action: " << packet.action << ", Server ID: " << packet.server_id
                   << ", New X: " << packet.new_x << ", New Y: " << packet.new_y << std::endl;
@@ -173,6 +171,7 @@ void RType::Client::drawSprites(sf::RenderWindow& window)
         window.draw(spriteElement.sprite);
     }
     window.draw(latencyText);
+    window.draw(packetLossText);
 }
 
 void RType::Client::parseMessage(std::string packet_data)
@@ -193,8 +192,6 @@ void RType::Client::parseFramePacket(const std::string& packet_data)
 {
     std::stringstream ss(packet_data);
     std::string frame_segment;
-
-    std::cout << "[DEBUG] Parsing Frame Packet: " << packet_data << std::endl;
 
     std::getline(ss, frame_segment, ':');
     int frame_id;
@@ -318,11 +315,31 @@ void RType::Client::LoadFont()
         std::cerr << "Error loading font\n";
     }
 
+    packetLossText.setFont(font);
+    packetLossText.setCharacterSize(24);
+    packetLossText.setFillColor(sf::Color::White);
+    packetLossText.setPosition(10, 40);
     latencyText.setFont(font);
     latencyText.setCharacterSize(24);
     latencyText.setFillColor(sf::Color::White);
     latencyText.setPosition(10, 10);
 }
+
+void RType::Client::updatePacketLoss(std::map<int, Frame>::iterator it) {
+
+    if (it == frameMap.end()) {
+        packetLossCount++;
+    }
+
+    if (packetLossClock.getElapsedTime().asSeconds() >= packetLossDuration.asSeconds()) {
+        std::cout << "[INFO] Packet loss in last 10 seconds: " << packetLossCount << std::endl;
+        packetLossCount = 0;
+        packetLossClock.restart();
+    }
+
+    packetLossText.setString("Packet Loss: " + std::to_string(packetLossCount));
+}
+
 
 int RType::Client::main_loop()
 {
@@ -350,6 +367,7 @@ int RType::Client::main_loop()
             if (!frameMap.empty()) {
                 mutex_frameMap.lock();
                 auto it = frameMap.find(currentFrameIndex);
+                updatePacketLoss(it);
                 Frame currentFrame = it->second;
                 mutex_frameMap.unlock();
                 createSprite(currentFrame);

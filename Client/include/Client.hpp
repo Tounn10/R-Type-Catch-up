@@ -90,6 +90,7 @@ namespace RType {
         void initLobbySprites(sf::RenderWindow& window);
         void LoadSound();
         void LoadFont();
+        void updatePacketLoss(std::map<int, Frame>::iterator it);
         std::string createMousePacket(Network::PacketType type, int x = 0, int y = 0);
         void start_send_timer();
         void handle_send_timer(const boost::system::error_code& error);
@@ -109,15 +110,19 @@ namespace RType {
         std::map<int, Frame> frameMap;
         PacketElement gameStatePacket;
         sf::Clock frameClock;
+        sf::Clock packetLossClock;
+        int packetLossCount = 0;
         int currentFrameIndex = -1;
         int last_received_frame_id = -1;
         const sf::Time frameDuration = sf::milliseconds(10);
+        const sf::Time packetLossDuration = sf::seconds(10);
         sf::SoundBuffer buffer_background_;
         sf::Sound sound_background_;
         sf::SoundBuffer buffer_shoot_;
         sf::Sound sound_shoot_;
         sf::Font font;
         sf::Text latencyText;
+        sf::Text packetLossText;
         boost::asio::steady_timer send_timer_;
         std::queue<std::string> send_queue_;
     };
