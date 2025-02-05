@@ -53,6 +53,7 @@ namespace Network {
         void handlePlayerDown(const Network::Packet &packet);
         void handleOpenMenu(const Network::Packet &packet);
         void handlePlayerAction(const Network::Packet &packet, int action);
+        void handleImportantPacketReceived(const Network::Packet &packet);
 
     private:
         ThreadSafeQueue<Network::Packet> &m_queue;

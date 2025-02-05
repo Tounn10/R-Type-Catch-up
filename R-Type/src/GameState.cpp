@@ -16,10 +16,11 @@ void GameState::initializeplayers(int numPlayers, EngineFrame &frame) {
     }
 }
 
-void GameState::update(EngineFrame &frame) {
+void GameState::update(EngineFrame &frame) { // Game Engine loop in which I will update the game
     registry.run_systems();
     initializeplayers(m_server->getClients().size(), frame);
     processPlayerActions(frame);
+
     //if (areEnemiesCleared()) {
     //    spawnEnemiesRandomly(new_frame);
     //}
@@ -41,9 +42,6 @@ void GameState::run(int numPlayers) {
             update(new_frame);
             engineFrames.emplace(frameId++, new_frame);
             m_server->server_mutex.unlock();
-            //if (engineFrames.size() > 60) { This needs to go to the server as well as the clock
-            //    m_server->SendFrame(engineFrames.at(last_frame_sent++));
-            //}
         }
     }
 }

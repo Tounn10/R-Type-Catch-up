@@ -11,6 +11,7 @@
 #include "Data.hpp"
 
 #include <variant>
+#include <string>
 
 namespace Network {
 
@@ -28,6 +29,7 @@ namespace Network {
             DeathData,
             BossData
         > data;
+        std::string rawData;
     };
 }
 

@@ -62,6 +62,7 @@ void PacketHandler::initializeHandlers() {
     m_handlers[Network::PacketType::PLAYER_UP] = std::bind(&PacketHandler::handlePlayerUp, this, std::placeholders::_1);
     m_handlers[Network::PacketType::PLAYER_DOWN] = std::bind(&PacketHandler::handlePlayerDown, this, std::placeholders::_1);
     m_handlers[Network::PacketType::OPEN_MENU] = std::bind(&PacketHandler::handleOpenMenu, this, std::placeholders::_1);
+    m_handlers[Network::PacketType::IMPORTANT_PACKET_RECEIVED] = std::bind(&PacketHandler::handleImportantPacketReceived, this, std::placeholders::_1);
 }
 
 void PacketHandler::handlePacket(const Network::Packet &packet) {
@@ -70,6 +71,17 @@ void PacketHandler::handlePacket(const Network::Packet &packet) {
         it->second(packet);
     } else {
         std::cout << "[PacketHandler] Received unknown packet type." << std::endl;
+    }
+}
+
+void PacketHandler::handleImportantPacketReceived(const Network::Packet &packet)
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    size_t delimiterPos = packet.rawData.find(';');
+    if (delimiterPos != std::string::npos)
+    {
+        int frameId = std::stoi(packet.rawData.substr(delimiterPos + 1));
+        m_server.unacknowledgedPackets.erase(frameId);
     }
 }
 

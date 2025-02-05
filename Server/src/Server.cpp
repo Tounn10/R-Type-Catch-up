@@ -90,6 +90,7 @@ void RType::Server::handle_receive(const boost::system::error_code &error, std::
 
         Network::Packet packet;
         packet.type = deserializePacket(received_data).type;
+        packet.rawData = received_data;
         m_packetQueue.push(packet);
         start_receive();
     }
@@ -208,6 +209,14 @@ void RType::Server::sendAllEntitiesToNewClients(EngineFrame &frame) {
     }
 }
 
+void RType::Server::resendImportPackets() {
+    for (auto it = unacknowledgedPackets.begin(); it != unacknowledgedPackets.end(); ++it) {
+        if (it->second.second.getElapsedTime().asMilliseconds() < 100) {
+            std::cout << "[DEBUG] Resending important packet: " << it->first << std::endl;
+            SendFrame(it->second.first, it->first);
+        } //after 100 ms delay packet is considered as lost and count will increment onto client side
+    }
+}
 
 void RType::Server::run() {
     std::chrono::steady_clock::time_point start_time = std::chrono::steady_clock::now();
@@ -226,11 +235,12 @@ void RType::Server::run() {
                     sendAllEntitiesToNewClients(frame);
                 }
                 PacketFactory(frame);
-                SendFrame(frame);
+                SendFrame(frame, it->first);
                 it->second.sent = true;
             }
         }
         SendLatencyCheck();
+        resendImportPackets();
         server_mutex.unlock();
     }
 }
@@ -275,7 +285,9 @@ void RType::Server::PacketFactory(EngineFrame &frame)
     }
 }
 
-void RType::Server::SendFrame(EngineFrame &frame) {
+void RType::Server::SendFrame(EngineFrame &frame, int frameId) {
+    if (frame.frameInfos.find("33") != std::string::npos)
+        unacknowledgedPackets.emplace(frameId, std::make_pair(frame, sf::Clock()));
     Broadcast(frame.frameInfos);
 }
 

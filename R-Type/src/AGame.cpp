@@ -126,6 +126,7 @@ void AGame::spawnEntity(GeneralEntity::EntityType type, float x, float y, Engine
     }
 
     frame.frameInfos += m_server->createPacket(packetType, data);
+    frame.frameInfos += m_server->createPacket(Network::PacketType::IMPORTANT_PACKET, "-1;-1;-1/");
     id_to_set++;
 }
 
@@ -137,6 +138,7 @@ void AGame::killEntity(int entityId, EngineFrame &frame)
         entities.erase(it);
         std::string data = std::to_string(entityId) + ";-1;-1/";
         frame.frameInfos += m_server->createPacket(Network::PacketType::DELETE, data);
+        frame.frameInfos += m_server->createPacket(Network::PacketType::IMPORTANT_PACKET, "-1;-1;-1/");
     }
 }
 

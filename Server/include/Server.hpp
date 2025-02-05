@@ -42,9 +42,10 @@ namespace RType {
         void enemyPacketFactory(EngineFrame &frame);
         void bulletPacketFactory(EngineFrame &frame);
         void bossPacketFactory(EngineFrame &frame);
-        void SendFrame(EngineFrame &frame);
+        void SendFrame(EngineFrame &frame, int frameId);
         void PacketFactory(EngineFrame &frame);
         void sendAllEntitiesToNewClients(EngineFrame &frame);
+        void resendImportPackets();
         void SendLatencyCheck();
         void run();
         bool hasPositionChanged(int id, float x, float y, std::unordered_map<int, std::pair<float, float>>& lastKnownPositions);
@@ -62,6 +63,7 @@ namespace RType {
         std::mutex clients_mutex_;
         std::mutex server_mutex;
         bool m_running;
+        std::map<int, std::pair<EngineFrame, sf::Clock>> unacknowledgedPackets;
     private:
         using PacketHandler = std::function<void(const std::vector<std::string>&)>;
         void start_receive();

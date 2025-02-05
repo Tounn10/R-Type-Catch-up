@@ -234,7 +234,10 @@ void RType::Client::parseFramePacket(const std::string& packet_data)
             packetElement.new_x = std::stof(elements[2]);
             packetElement.new_y = std::stof(elements[3]);
 
-            new_frame.entityPackets.push_back(packetElement);
+            if (packetElement.action == 33)
+                send_queue_.push(createPacket(Network::PacketType::IMPORTANT_PACKET_RECEIVED) + ";" + std::to_string(frame_id));
+            else
+                new_frame.entityPackets.push_back(packetElement);
 
         } catch (const std::exception& e) {
             std::cerr << "[ERROR] Failed to parse subpacket: " << e.what() << std::endl;
