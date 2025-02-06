@@ -55,6 +55,9 @@ namespace Network {
         void handlePlayerAction(const Network::Packet &packet, int action);
         void handleImportantPacketReceived(const Network::Packet &packet);
 
+        std::string compressData(const std::string& data);
+        std::string decompressData(const std::string& compressed);
+
     private:
         ThreadSafeQueue<Network::Packet> &m_queue;
         GameState& m_game;

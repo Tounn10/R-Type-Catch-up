@@ -6,6 +6,9 @@
 */
 
 #include "PacketHandler.hpp"
+#include <boost/iostreams/filter/gzip.hpp>
+#include <boost/iostreams/filtering_streambuf.hpp>
+#include <boost/iostreams/copy.hpp>
 #include <iostream>
 #include <functional>
 
@@ -255,4 +258,28 @@ void PacketHandler::handlePlayerAction(const Network::Packet &packet, int action
     } else {
         std::cerr << "[PacketHandler] Client endpoint not found in client list." << std::endl;
     }
+}
+
+std::string compressData(const std::string& data) {
+    std::stringstream compressed;
+    std::stringstream original(data);
+
+    boost::iostreams::filtering_streambuf<boost::iostreams::output> compressed_streambuffer;
+    compressed_streambuffer.push(boost::iostreams::gzip_compressor());
+    compressed_streambuffer.push(compressed);
+
+    boost::iostreams::copy(original, compressed_streambuffer);
+    return compressed.str();
+}
+
+std::string decompressData(const std::string& compressed) {
+    std::stringstream decompressed;
+    std::stringstream compressedStream(compressed);
+
+    boost::iostreams::filtering_streambuf<boost::iostreams::input> decompressed_streambuffer;
+    decompressed_streambuffer.push(boost::iostreams::gzip_decompressor());
+    decompressed_streambuffer.push(compressedStream);
+
+    boost::iostreams::copy(decompressed_streambuffer, decompressed);
+    return decompressed.str();
 }
