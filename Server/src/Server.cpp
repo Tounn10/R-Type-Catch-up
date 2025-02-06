@@ -212,9 +212,9 @@ void RType::Server::sendAllEntitiesToNewClients(EngineFrame &frame) {
 void RType::Server::resendImportPackets() {
     for (auto it = unacknowledgedPackets.begin(); it != unacknowledgedPackets.end(); ++it) {
         if (it->second.second.getElapsedTime().asMilliseconds() < 100) {
-            std::cout << "[DEBUG] Resending important packet: " << it->first << std::endl;
             SendFrame(it->second.first, it->first);
-        } //after 100 ms delay packet is considered as lost and count will increment onto client side
+        } else
+            unacknowledgedPackets.erase(it);    //after 100 ms delay packet is considered as lost and will not be resent
     }
 }
 
@@ -286,7 +286,7 @@ void RType::Server::PacketFactory(EngineFrame &frame)
 }
 
 void RType::Server::SendFrame(EngineFrame &frame, int frameId) {
-    if (frame.frameInfos.find("33") != std::string::npos)
+    if (frame.frameInfos.find("33;") != std::string::npos)
         unacknowledgedPackets.emplace(frameId, std::make_pair(frame, sf::Clock()));
     Broadcast(frame.frameInfos);
 }

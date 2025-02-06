@@ -234,9 +234,10 @@ void RType::Client::parseFramePacket(const std::string& packet_data)
             packetElement.new_x = std::stof(elements[2]);
             packetElement.new_y = std::stof(elements[3]);
 
-            if (packetElement.action == 33)
+            if (packetElement.action == 33) {
                 send_queue_.push(createPacket(Network::PacketType::IMPORTANT_PACKET_RECEIVED) + ";" + std::to_string(frame_id));
-            else
+                std::cout << "[DEBUG] Received important packet: " << frame_id << std::endl;
+            } else
                 new_frame.entityPackets.push_back(packetElement);
 
         } catch (const std::exception& e) {

@@ -139,7 +139,7 @@ void PacketHandler::handlePlayerJoin(const Network::Packet &packet)
 void PacketHandler::handlePlayerShoot(const Network::Packet &packet)
 {
     handlePlayerAction(packet, 5);
-    std::cerr << "[PacketHandler] Client endpoint not found in client list." << std::endl;
+    std::cerr << "[PacketHandler] Handled PLAYER_SHOOT packet." << std::endl;
 }
 
 void PacketHandler::handlePlayerHit(const Network::Packet &packet)
