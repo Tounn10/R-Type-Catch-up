@@ -17,7 +17,7 @@ class ClientRegister {
         size_t getId() const { return _id; };
         udp::endpoint getEndpoint() const { return _endpoint; };
 
-    private: // in there add a last frame sent tracker to maintain server 60 frames forward when player join and to know what missing frames to send when disconnected
+    private:
         size_t _id;
         udp::endpoint _endpoint;
 };

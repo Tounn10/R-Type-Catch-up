@@ -12,7 +12,6 @@
 #include <boost/iostreams/stream.hpp>
 #include <boost/algorithm/string.hpp>
 #include <iostream>
-#include <thread>
 #include <queue>
 #include <map>
 #include <boost/asio/steady_timer.hpp>
@@ -33,43 +32,40 @@ namespace RType {
     public:
         Server(boost::asio::io_context& io_context, short port, ThreadSafeQueue<Network::Packet>& packetQueue, GameState* game = nullptr);
         ~Server();
+
+        void run();
         void handle_receive(const boost::system::error_code& error, std::size_t bytes_transferred);
         void send_to_client(const std::string& message, const boost::asio::ip::udp::endpoint& client_endpoint);
-
         void setGameState(GameState* game);
         void Broadcast(const std::string& message);
-        void playerPacketFactory(EngineFrame &frame);
-        void enemyPacketFactory(EngineFrame &frame);
-        void bulletPacketFactory(EngineFrame &frame);
-        void bossPacketFactory(EngineFrame &frame);
         void SendFrame(EngineFrame &frame, int frameId);
         void PacketFactory(EngineFrame &frame);
+        bool hasPositionChanged(int id, float x, float y, std::unordered_map<int, std::pair<float, float>>& lastKnownPositions);
         void sendAllEntitiesToNewClients(EngineFrame &frame);
         void resendImportPackets();
         void SendLatencyCheck();
-        void run();
-        bool hasPositionChanged(int id, float x, float y, std::unordered_map<int, std::pair<float, float>>& lastKnownPositions);
+
         Network::ReqConnect reqConnectData(boost::asio::ip::udp::endpoint& client_endpoint);
         Network::DisconnectData disconnectData(boost::asio::ip::udp::endpoint& client_endpoint);
-        void handle_game_packet(const Network::Packet& packet, const boost::asio::ip::udp::endpoint& client_endpoint);
-        std::string createPacket(const Network::PacketType& type, const std::string& data);
         Network::Packet deserializePacket(const std::string& packet_str);
+        std::string createPacket(const Network::PacketType& type, const std::string& data);
+
         const ClientList& getClients() const { return clients_; }
-        const udp::endpoint& getRemoteEndpoint() const {
-            return remote_endpoint_;
-            }
+        const udp::endpoint& getRemoteEndpoint() const { return remote_endpoint_; }
+
         ClientList clients_;
         uint32_t _nbClients;
         std::mutex clients_mutex_;
         std::mutex server_mutex;
         bool m_running;
         std::map<int, std::pair<EngineFrame, sf::Clock>> unacknowledgedPackets;
+
     private:
         using PacketHandler = std::function<void(const std::vector<std::string>&)>;
         void start_receive();
         uint32_t createClient(boost::asio::ip::udp::endpoint& client_endpoint);
-        void start_send_timer(); // Add this line
-        void handle_send_timer(const boost::system::error_code& error); // Add this line
+        void start_send_timer();
+        void handle_send_timer(const boost::system::error_code& error);
 
         udp::socket socket_;
         udp::endpoint remote_endpoint_;
@@ -78,8 +74,8 @@ namespace RType {
         std::unordered_map<std::string, std::function<void(const std::vector<std::string>&)>> packet_handlers_;
         std::unordered_map<Network::PacketType, void(*)(const Network::Packet&)> m_handlers;
         GameState* m_game;
-        std::queue<std::string> send_queue_; // Add this line
-        boost::asio::steady_timer send_timer_; // Add this line
+        std::queue<std::string> send_queue_;
+        boost::asio::steady_timer send_timer_;
         std::queue<uint32_t> available_ids_;
         sf::Clock latencyClock;
         const sf::Time LatencyRefreshDuration = sf::milliseconds(200);

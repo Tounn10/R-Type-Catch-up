@@ -111,7 +111,6 @@ std::string RType::Server::createPacket(const Network::PacketType& type, const s
 {
     std::string packet_str;
     std::string packet_data = data.empty() ? "-1;-1;-1/" : data;
-    //std::cout << "[DEBUG] Creating packet with type: " << static_cast<int>(type) << " and data: " << packet_data << std::endl;
 
     packet_str.push_back(static_cast<uint8_t>(type));
     packet_str.push_back(static_cast<uint8_t>(';'));
@@ -120,8 +119,6 @@ std::string RType::Server::createPacket(const Network::PacketType& type, const s
     }
     return packet_str;
 }
-
-//COMMANDS
 
 uint32_t RType::Server::createClient(boost::asio::ip::udp::endpoint& client_endpoint)
 {
@@ -306,7 +303,6 @@ void RType::Server::handle_send_timer(const boost::system::error_code& error) {
                 send_to_client(message, client.second.getEndpoint());
             }
         }
-        // Restart the timer
         start_send_timer();
     } else {
         std::cerr << "[DEBUG] Timer error: " << error.message() << std::endl;

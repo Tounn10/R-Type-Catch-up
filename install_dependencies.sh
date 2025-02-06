@@ -14,6 +14,7 @@ sudo apt-get update && apt-get install -y \
     libgl1-mesa-dev \
     libglu1-mesa-dev \
     libudev-dev \
+    libboost-iostreams-dev \
     libopenal-dev \
     libogg-dev \
     libvorbis-dev \

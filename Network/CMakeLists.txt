@@ -19,7 +19,6 @@ include_directories(
 # Network sources
 set(NETWORK_SOURCES
     src/PacketHandler.cpp
-    src/Packet.cpp
 )
 
 set(NETWORK_HEADERS

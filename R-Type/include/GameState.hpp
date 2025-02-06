@@ -3,27 +3,72 @@
 
 #include "AGame.hpp"
 #include "Registry.hpp"
+#include "PlayerAction.hpp"
+#include "EngineFrame.hpp"
+#include "GeneralEntity.hpp"
+#include <SFML/Graphics.hpp>
+#include <SFML/System.hpp>
+#include <mutex>
 #include <random>
 #include <memory> 
 #include <chrono>
 
+namespace RType {
+    class Server;
+}
+
 class GameState : public AGame {
-public:
-    GameState(RType::Server* server);
+    public:
+        GameState(RType::Server* server);
+        ~GameState();
 
-    void initializeplayers(int numPlayers, EngineFrame &frame);
-    void update(EngineFrame &frame) override;
-    void handlePlayerMove(int playerId, int actionId) override;
-    bool isBossSpawned() const;
-    bool areEnemiesCleared() const;
-    int countPlayers() const;
-    void startNextWave(EngineFrame &frame);
-    void run(int numPlayers);
+        void run(int numPlayers);
 
-    int currentWave;
-    size_t getEntityCount() const override;
+        // Implement player action management functions
+        void addPlayerAction(int playerId, int actionId);
+        void processPlayerActions(EngineFrame &frame);
+        void deletePlayerAction();
+        const std::vector<PlayerAction>& getPlayerActions() const;
 
-private:
+        std::pair<float, float> getEntityPosition(int entityId) const;
+        std::map<int, GeneralEntity>& getEntities();
+        std::map<int, EngineFrame>& getEngineFrames();
+
+        // Implement entity spawn and delete management functions
+        void spawnEntity(GeneralEntity::EntityType type, float x, float y, EngineFrame &frame);
+        void killEntity(int entityId, EngineFrame &frame);
+
+
+        //Implement generic Game Engine function to create a game from these
+        void registerComponents();
+        void moveBullets(EngineFrame &frame);
+        void moveEnemies(EngineFrame &frame);
+        void checkCollisions(GeneralEntity::EntityType typeA, GeneralEntity::EntityType typeB, float collisionThreshold, EngineFrame &frame);
+
+        //GameState methods
+        void spawnEnemiesRandomly(EngineFrame &frame);
+        void initializeplayers(int numPlayers, EngineFrame &frame);
+        void handlePlayerMove(int playerId, int actionId);
+        bool isBossSpawned() const;
+        bool areEnemiesCleared() const;
+        int countPlayers() const;
+        void startNextWave(EngineFrame &frame);
+
+        int currentWave;
+        size_t getEntityCount() const;
+        void update(EngineFrame &frame);
+
+    private:
+    //old AGame variables
+    int id_to_set = 0;
+    std::vector<PlayerAction> playerActions;
+    std::map<int, GeneralEntity> entities;
+    std::map<int, EngineFrame> engineFrames;
+    Registry registry;
+    RType::Server* m_server;
+    std::mutex playerActionsMutex;
+
+    //GameState Variables
     std::mt19937 rng;
     std::uniform_real_distribution<float> distX;
     std::uniform_real_distribution<float> distY;
@@ -32,9 +77,6 @@ private:
     std::chrono::steady_clock::time_point lastSpawnTime;
     sf::Clock frameClock;
     const sf::Time frameDuration = sf::milliseconds(10);
-
-    void spawnEnemiesRandomly(EngineFrame &frame);
-    RType::Server* m_server; // Pointer to RType::Server
     int nextEnemyId;
     int nextBossId;
 };

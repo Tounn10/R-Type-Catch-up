@@ -7,7 +7,6 @@
 
 #include "PacketHandler.hpp"
 #include <iostream>
-#include <boost/algorithm/string.hpp>
 #include <functional>
 
 using namespace Network;

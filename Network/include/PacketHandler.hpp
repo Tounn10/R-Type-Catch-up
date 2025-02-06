@@ -62,7 +62,6 @@ namespace Network {
         RType::Server& m_server;
         std::atomic<bool> m_running{false};
         std::mutex m_mutex;
-
         std::unordered_map<Network::PacketType, std::function<void(const Network::Packet&)>> m_handlers;
     };
 }
