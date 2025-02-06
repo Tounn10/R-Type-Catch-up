@@ -11,6 +11,7 @@
 #include "ThreadSafeQueue.hpp"
 #include "PacketHandler.hpp"
 #include "GameState.hpp"
+#include <dlfcn.h>
 
 short parsePort(int ac, char **av)
 {
@@ -32,11 +33,29 @@ void runServer(short port) {
 
         RType::Server server(io_context, port, packetQueue, nullptr);
 
-        GameState game(&server);
+        // Step 1: Open the shared library
+        void* handle = dlopen("./R-Type/libGameState.so", RTLD_LAZY);
+        if (!handle) {
+            std::cerr << "Error loading library: " << dlerror() << std::endl;
+            return;
+        }
 
-        server.setGameState(&game);
+        // Step 2: Load the factory function
+        typedef GameState* (*CreateGameFunc)(void*);
+        CreateGameFunc create_game = (CreateGameFunc)dlsym(handle, "create_game");
 
-        Network::PacketHandler packetHandler(packetQueue, game, server);
+        if (!create_game) {
+            std::cerr << "Error loading function: " << dlerror() << std::endl;
+            dlclose(handle);
+            return;
+        }
+
+        // Step 3: Create an instance of GameState dynamically
+        GameState* game = create_game(&server);
+        server.setGameState(game);  // Correctly set the GameState object
+
+        // Start handling packets with the correctly typed GameState
+        Network::PacketHandler packetHandler(packetQueue, *game, server);
         packetHandler.start();
 
         std::cout << "Server started\nListening on UDP port " << port << std::endl;
@@ -51,11 +70,15 @@ void runServer(short port) {
 
         if (io_thread.joinable())
             io_thread.join();
-
         if (serverThread.joinable())
             serverThread.join();
 
         packetHandler.stop();
+
+        // Step 4: Cleanup
+        delete game;  // Delete dynamically allocated GameState
+        dlclose(handle);  // Close the shared library
+
     } catch (const boost::system::system_error& e) {
         if (e.code() == boost::asio::error::access_denied) {
             throw RType::PermissionDeniedException("Permission denied");

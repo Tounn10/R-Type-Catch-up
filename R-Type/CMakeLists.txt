@@ -26,6 +26,16 @@ set(RTYPE_SOURCES
 
 add_library(R-Type ${RTYPE_SOURCES})
 
+# Create a shared library for GameState
+add_library(GameState SHARED ${RTYPE_SOURCES})
+
+# Ensure position-independent code (-fPIC)
+set_target_properties(GameState PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
+# Set the output name to libGameState.so
+set_target_properties(GameState PROPERTIES OUTPUT_NAME "GameState")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/R-Type/)
+
 # Link against Boost::Boost, SFML::SFML, ECSLib if needed
 target_link_libraries(R-Type
     Boost::Boost
