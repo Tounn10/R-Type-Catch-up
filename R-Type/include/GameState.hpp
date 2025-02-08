@@ -25,14 +25,14 @@ class GameState : public AGame {
         void run(int numPlayers);
 
         // Implement player action management functions
-        void addPlayerAction(int playerId, int actionId);
+        void addPlayerAction(int playerId, int actionId) override;
         void processPlayerActions(EngineFrame &frame);
         void deletePlayerAction();
         const std::vector<PlayerAction>& getPlayerActions() const;
 
-        std::pair<float, float> getEntityPosition(int entityId) const;
-        std::map<int, GeneralEntity>& getEntities();
-        std::map<int, EngineFrame>& getEngineFrames();
+        std::pair<float, float> getEntityPosition(int entityId) const override;
+        std::map<int, GeneralEntity>& getEntities() override;
+        std::map<int, EngineFrame>& getEngineFrames() override;
 
         // Implement entity spawn and delete management functions
         void spawnEntity(GeneralEntity::EntityType type, float x, float y, EngineFrame &frame);

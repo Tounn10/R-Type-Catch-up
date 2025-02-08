@@ -319,6 +319,6 @@ size_t GameState::getEntityCount() const {
     return entities.size();
 }
 
-extern "C" GameState* create_game(void* server) {
+extern "C" AGame* create_game(void* server) {
     return new GameState(static_cast<RType::Server*>(server));
 }

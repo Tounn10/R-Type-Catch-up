@@ -36,7 +36,7 @@ namespace RType {
         void run();
         void handle_receive(const boost::system::error_code& error, std::size_t bytes_transferred);
         void send_to_client(const std::string& message, const boost::asio::ip::udp::endpoint& client_endpoint);
-        void setGameState(GameState* game);
+        void setGameState(AGame* game);
         void Broadcast(const std::string& message);
         void SendFrame(EngineFrame &frame, int frameId);
         void PacketFactory(EngineFrame &frame);
@@ -73,7 +73,7 @@ namespace RType {
         ThreadSafeQueue<Network::Packet>& m_packetQueue;
         std::unordered_map<std::string, std::function<void(const std::vector<std::string>&)>> packet_handlers_;
         std::unordered_map<Network::PacketType, void(*)(const Network::Packet&)> m_handlers;
-        GameState* m_game;
+        AGame* m_game;
         std::queue<std::string> send_queue_;
         boost::asio::steady_timer send_timer_;
         std::queue<uint32_t> available_ids_;

@@ -30,7 +30,7 @@ RType::Server::~Server()
     socket_.close();
 }
 
-void RType::Server::setGameState(GameState* game) {
+void RType::Server::setGameState(AGame* game) {
     m_game = game;
 }
 

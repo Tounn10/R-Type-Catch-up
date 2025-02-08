@@ -15,7 +15,7 @@
 
 short parsePort(int ac, char **av)
 {
-    if (ac != 2) {
+    if (ac != 3) {
         std::cerr << "Usage: " << av[0] << " <port>" << std::endl;
         throw RType::InvalidPortException("Invalid number of arguments");
     }
@@ -26,22 +26,23 @@ short parsePort(int ac, char **av)
     }
 }
 
-void runServer(short port) {
+void runServer(short port, const std::string& gameName) {
     try {
         boost::asio::io_context io_context;
         ThreadSafeQueue<Network::Packet> packetQueue;
 
         RType::Server server(io_context, port, packetQueue, nullptr);
 
-        // Step 1: Open the shared library
-        void* handle = dlopen("./R-Type/libGameState.so", RTLD_LAZY);
+        // Load the correct game library based on the game name
+        std::string libPath = "./R-Type/lib" + gameName + ".so";
+        void* handle = dlopen(libPath.c_str(), RTLD_LAZY);
         if (!handle) {
             std::cerr << "Error loading library: " << dlerror() << std::endl;
             return;
         }
 
-        // Step 2: Load the factory function
-        typedef GameState* (*CreateGameFunc)(void*);
+        // Load the factory function
+        typedef AGame* (*CreateGameFunc)(void*);
         CreateGameFunc create_game = (CreateGameFunc)dlsym(handle, "create_game");
 
         if (!create_game) {
@@ -50,34 +51,27 @@ void runServer(short port) {
             return;
         }
 
-        // Step 3: Create an instance of GameState dynamically
-        GameState* game = create_game(&server);
-        server.setGameState(game);  // Correctly set the GameState object
+        // Create an instance of the game dynamically
+        AGame* game = create_game(&server);
+        server.setGameState(game);  // Set the game dynamically
 
-        // Start handling packets with the correctly typed GameState
+        // Start handling packets
         Network::PacketHandler packetHandler(packetQueue, *game, server);
         packetHandler.start();
 
-        std::cout << "Server started\nListening on UDP port " << port << std::endl;
+        std::cout << "Server started\nListening on UDP port " << port << " running " << gameName << std::endl;
 
-        std::thread io_thread([&io_context] {
-            io_context.run();
-        });
+        std::thread io_thread([&io_context] { io_context.run(); });
+        std::thread serverThread([&server] { server.run(); });
 
-        std::thread serverThread([&server] {
-            server.run();
-        });
-
-        if (io_thread.joinable())
-            io_thread.join();
-        if (serverThread.joinable())
-            serverThread.join();
+        if (io_thread.joinable()) io_thread.join();
+        if (serverThread.joinable()) serverThread.join();
 
         packetHandler.stop();
 
-        // Step 4: Cleanup
-        delete game;  // Delete dynamically allocated GameState
-        dlclose(handle);  // Close the shared library
+        // Cleanup
+        delete game;
+        dlclose(handle);
 
     } catch (const boost::system::system_error& e) {
         if (e.code() == boost::asio::error::access_denied) {
@@ -92,7 +86,8 @@ int main(int ac, char **av)
 {
     try {
         short port = parsePort(ac, av);
-        runServer(port);
+        std::string gameName = av[2];
+        runServer(port, gameName);
     } catch (const RType::NtsException& e) {
         std::cerr << "Exception: " << e.what() << " (Type: " << e.getType() << ")" << std::endl;
     } catch (const std::exception& e) {

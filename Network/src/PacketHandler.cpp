@@ -15,7 +15,7 @@
 using namespace Network;
 
 // Constructor
-PacketHandler::PacketHandler(ThreadSafeQueue<Network::Packet>& queue, GameState& game, RType::Server& server) : m_queue(queue), m_game(game), m_server(server)
+PacketHandler::PacketHandler(ThreadSafeQueue<Network::Packet>& queue, AGame& game, RType::Server& server) : m_queue(queue), m_game(game), m_server(server)
 {
     initializeHandlers();
 }
