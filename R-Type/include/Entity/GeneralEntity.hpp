@@ -10,7 +10,8 @@ public:
         Player,
         Enemy,
         Bullet,
-        Boss
+        Boss,
+        EnemyBullet
     };
 
     GeneralEntity(Registry& registry, EntityType type, float x, float y);
@@ -26,12 +27,16 @@ public:
     EntityType getType() const;
     void setType(EntityType type);
 
+    int getNumberOfLives() const;
+    void setNumberOfLives(int newNumberOfLives);
+
 private:
     void addComponents(EntityType type, float x, float y);
 
     Registry registry;
     Registry::Entity entity;
     EntityType type;
+    int numberOfLives = 1;
 };
 
 #endif // GENERAL_ENTITY_HPP

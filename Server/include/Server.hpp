@@ -23,7 +23,7 @@
 
 typedef std::map<uint32_t, ClientRegister> ClientList;
 
-#define MAX_LENGTH 1024
+#define MAX_LENGTH 4096
 
 using namespace boost::placeholders; // Used for Boost.Asio asynchronous operations to bind placeholders for callback functions
 
@@ -69,7 +69,7 @@ namespace RType {
 
         udp::socket socket_;
         udp::endpoint remote_endpoint_;
-        std::array<char, 1024> recv_buffer_;
+        std::array<char, MAX_LENGTH> recv_buffer_;
         ThreadSafeQueue<Network::Packet>& m_packetQueue;
         std::unordered_map<std::string, std::function<void(const std::vector<std::string>&)>> packet_handlers_;
         std::unordered_map<Network::PacketType, void(*)(const Network::Packet&)> m_handlers;

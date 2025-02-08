@@ -39,6 +39,11 @@ void GeneralEntity::addComponents(EntityType type, float x, float y) {
             this->registry.add_component<Velocity>(entity, {0.0f, 0.0f});
             this->registry.add_component<Drawable>(entity, {sf::RectangleShape(sf::Vector2f(100.0f, 100.0f))});
             this->registry.add_component<Collidable>(entity, {true});
+            this->numberOfLives = 3;
+            break;
+        case EntityType::EnemyBullet:
+            this->registry.add_component<Projectile>(entity, {1.0f});
+            this->registry.add_component<Drawable>(entity, {sf::RectangleShape(sf::Vector2f(5.0f, 5.0f))});
             break;
     }
 }
@@ -75,4 +80,14 @@ GeneralEntity::EntityType GeneralEntity::getType() const {
 
 void GeneralEntity::setType(EntityType newType) {
     type = newType;
+}
+
+int GeneralEntity::getNumberOfLives() const {
+    return this->numberOfLives;
+}
+
+void GeneralEntity::setNumberOfLives(int newNumberOfLives) {
+    std::cout << "Entity " << entity << " lives: " << this->numberOfLives << std::endl;
+    std::cout << "Setting lives to " << newNumberOfLives << std::endl;
+    this->numberOfLives = newNumberOfLives;
 }

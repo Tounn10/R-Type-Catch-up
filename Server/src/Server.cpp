@@ -86,7 +86,6 @@ void RType::Server::handle_receive(const boost::system::error_code &error, std::
 {
     if (!error || error == boost::asio::error::message_size) {
         std::string received_data(recv_buffer_.data(), bytes_transferred);
-        std::cout << "[DEBUG] Received: " << static_cast<int>(received_data[0]) << std::endl;
 
         Network::Packet packet;
         packet.type = deserializePacket(received_data).type;

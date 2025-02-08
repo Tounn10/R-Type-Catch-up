@@ -27,7 +27,7 @@
 #include <vector>
 #include <map>
 
-#define MAX_LENGTH 1024
+#define MAX_LENGTH 4096
 #define BASE_AUDIO 50
 
 namespace RType {
@@ -37,7 +37,8 @@ namespace RType {
         Player,
         Bullet,
         Background,
-        Start_button
+        Start_button,
+        EnemyBullet
     };
 
     class PacketElement

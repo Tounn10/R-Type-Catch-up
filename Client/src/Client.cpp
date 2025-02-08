@@ -82,16 +82,15 @@ void RType::Client::run_receive()
 
 void RType::Client::createSprite(Frame& frame) {
     static const std::unordered_map<int, SpriteType> actionToSpriteType = {
-        {24, SpriteType::Player},
         {22, SpriteType::Enemy},
+        {23, SpriteType::Boss},
+        {24, SpriteType::Player},
         {25, SpriteType::Bullet},
-        {23, SpriteType::Boss}
+        {26, SpriteType::Background},
+        {27, SpriteType::EnemyBullet}
     };
 
     for (auto& packet : frame.entityPackets) {
-        std::cout << "[DEBUG] Packet - Action: " << packet.action << ", Server ID: " << packet.server_id
-                  << ", New X: " << packet.new_x << ", New Y: " << packet.new_y << std::endl;
-
         auto it = actionToSpriteType.find(packet.action);
         if (it != actionToSpriteType.end()) {
             auto spriteIt = std::find_if(sprites_.begin(), sprites_.end(), [&](const SpriteElement& sprite) {
@@ -99,7 +98,6 @@ void RType::Client::createSprite(Frame& frame) {
             });
 
             if (spriteIt == sprites_.end()) {
-                std::cout << "[DEBUG] Creating new sprite for Server ID: " << packet.server_id << std::endl;
                 SpriteElement spriteElement;
                 spriteElement.sprite.setTexture(textures_[it->second]);
                 spriteElement.sprite.setPosition(packet.new_x, packet.new_y);
@@ -108,8 +106,6 @@ void RType::Client::createSprite(Frame& frame) {
             } else {
                 std::cout << "[DEBUG] Sprite with Server ID: " << packet.server_id << " already exists." << std::endl;
             }
-        } else {
-            std::cout << "[DEBUG] Unknown action type: " << packet.action << std::endl;
         }
     }
 }
@@ -163,6 +159,7 @@ void RType::Client::loadTextures() //make sure to have the right textures in the
     textures_[RType::SpriteType::Bullet].loadFromFile("../assets/bullet.png");
     textures_[RType::SpriteType::Background].loadFromFile("../assets/background.png");
     textures_[RType::SpriteType::Start_button].loadFromFile("../assets/start_button.png");
+    textures_[RType::SpriteType::EnemyBullet].loadFromFile("../assets/enemy_bullet.png");
 }
 
 void RType::Client::drawSprites(sf::RenderWindow& window)
@@ -236,7 +233,6 @@ void RType::Client::parseFramePacket(const std::string& packet_data)
 
             if (packetElement.action == 33) {
                 send_queue_.push(createPacket(Network::PacketType::IMPORTANT_PACKET_RECEIVED) + ";" + std::to_string(frame_id));
-                std::cout << "[DEBUG] Received important packet: " << frame_id << std::endl;
             } else
                 new_frame.entityPackets.push_back(packetElement);
 
@@ -245,12 +241,6 @@ void RType::Client::parseFramePacket(const std::string& packet_data)
         }
     }
 
-    // Frame Loss Detection
-    //if (last_received_frame_id != -1 && frame_id != last_received_frame_id + 1) {
-    //    std::cerr << "[WARNING] Frame skipped! Expected " << last_received_frame_id + 1
-    //              << " but received " << frame_id << ". Requesting resend..." << std::endl;
-        // requestMissingFrame(last_received_frame_id + 1);
-    //}
     packetLossCount = frame_id - (last_received_frame_id + 1);
     mutex_last_received_frame_id.lock();
     last_received_frame_id = frame_id;
@@ -333,7 +323,6 @@ void RType::Client::LoadFont()
 void RType::Client::updatePacketLoss() {
 
     if (packetLossClock.getElapsedTime().asSeconds() >= packetLossDuration.asSeconds()) {
-        std::cout << "[INFO] Packet loss in last 10 seconds: " << packetLossCount << std::endl;
         packetLossCount = 0;
         packetLossClock.restart();
     }

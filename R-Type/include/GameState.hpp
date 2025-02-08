@@ -43,18 +43,19 @@ class GameState : public AGame {
         void registerComponents();
         void moveBullets(EngineFrame &frame);
         void moveEnemies(EngineFrame &frame);
-        void checkCollisions(GeneralEntity::EntityType typeA, GeneralEntity::EntityType typeB, float collisionThreshold, EngineFrame &frame);
+        void moveEnemyBullets(EngineFrame &frame);
+        void moveBoss(EngineFrame &frame);
+        void checkCollisions(GeneralEntity::EntityType typeA, GeneralEntity::EntityType typeB, float thresholdX, float thresholdY, EngineFrame &frame);
 
         //GameState methods
         void spawnEnemiesRandomly(EngineFrame &frame);
+        void spawnBossRandomly(EngineFrame &frame);
         void initializeplayers(int numPlayers, EngineFrame &frame);
         void handlePlayerMove(int playerId, int actionId);
-        bool isBossSpawned() const;
         bool areEnemiesCleared() const;
         int countPlayers() const;
-        void startNextWave(EngineFrame &frame);
+        int countEnemyBullets() const;
 
-        int currentWave;
         size_t getEntityCount() const;
         void update(EngineFrame &frame);
 
@@ -70,15 +71,15 @@ class GameState : public AGame {
 
     //GameState Variables
     std::mt19937 rng;
-    std::uniform_real_distribution<float> distX;
-    std::uniform_real_distribution<float> distY;
-    std::uniform_int_distribution<int> distTime;
-    int enemiesPerWave;
     std::chrono::steady_clock::time_point lastSpawnTime;
     sf::Clock frameClock;
     const sf::Time frameDuration = sf::milliseconds(10);
-    int nextEnemyId;
-    int nextBossId;
+    int currentWave = 0;
+    int currentBoss = 0;
+    int enemiesPerWave = 5;
+    int numberOfWaves = 1;
+    int maxEnemyBullets = 5;
+    int numberOfBoss = 1;
 };
 
 #endif // GAME_STATE_HPP
