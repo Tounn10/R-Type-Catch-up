@@ -1,5 +1,12 @@
-#ifndef GAME_STATE_HPP
-#define GAME_STATE_HPP
+/*
+** EPITECH PROJECT, 2025
+** R-Type [WSL: Ubuntu]
+** File description:
+** Pong Game Class
+*/
+
+#ifndef PONG_HPP
+#define PONG_HPP
 
 #include "AGame.hpp"
 #include "Registry.hpp"
@@ -10,17 +17,17 @@
 #include <SFML/System.hpp>
 #include <mutex>
 #include <random>
-#include <memory> 
+#include <memory>
 #include <chrono>
 
 namespace RType {
     class Server;
 }
 
-class GameState : public AGame {
+class Pong : public AGame {
     public:
-        GameState(RType::Server* server);
-        ~GameState();
+        Pong(RType::Server* server);
+        ~Pong();
 
         void run(int numPlayers);
 
@@ -86,4 +93,6 @@ class GameState : public AGame {
     int numberOfBoss = 1;
 };
 
-#endif // GAME_STATE_HPP
+extern "C" AGame* create_game(void* server);
+
+#endif //PONG_HPP

@@ -19,21 +19,30 @@ include_directories(
 
 # The R-Type "core" library sources
 set(RTYPE_SOURCES
-    src/GameState.cpp
     src/PlayerAction.cpp
     src/Entity/GeneralEntity.cpp
 )
 
+set(GAMESTATE_SOURCES
+        src/GameState.cpp
+        src/PlayerAction.cpp
+        src/Entity/GeneralEntity.cpp
+)
+
 add_library(R-Type ${RTYPE_SOURCES})
 
-# Create a shared library for GameState
-add_library(GameState SHARED ${RTYPE_SOURCES})
+add_library(GameState SHARED ${GAMESTATE_SOURCES})
+set_target_properties(GameState PROPERTIES OUTPUT_NAME "GameState" POSITION_INDEPENDENT_CODE ON)
 
-# Ensure position-independent code (-fPIC)
-set_target_properties(GameState PROPERTIES POSITION_INDEPENDENT_CODE ON)
+set(PONG_SOURCES
+    src/Pong.cpp
+    src/PlayerAction.cpp
+    src/Entity/GeneralEntity.cpp
+)
 
-# Set the output name to libGameState.so
-set_target_properties(GameState PROPERTIES OUTPUT_NAME "GameState")
+add_library(Pong SHARED ${PONG_SOURCES})
+set_target_properties(Pong PROPERTIES OUTPUT_NAME "Pong" POSITION_INDEPENDENT_CODE ON)
+
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/R-Type/)
 
 # Link against Boost::Boost, SFML::SFML, ECSLib if needed

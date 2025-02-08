@@ -2,11 +2,12 @@
 ** EPITECH PROJECT, 2025
 ** R-Type [WSL: Ubuntu]
 ** File description:
-** GameState
+** Pong Game
 */
 
+
 #include "Server.hpp"
-#include "GameState.hpp"
+#include "Pong.hpp"
 #include "AGame.hpp"
 #include "Velocity.hpp"
 #include "CollisionSystem.hpp"
@@ -15,25 +16,25 @@
 #include <random>
 #include <thread>
 
-GameState::GameState(RType::Server* server) : m_server(server) {
+Pong::Pong(RType::Server* server) : m_server(server) {
     registerComponents();
 }
 
-GameState::~GameState()
+Pong::~Pong()
 {
     playerActions.clear();
     entities.clear();
 }
 
-std::map<int, GeneralEntity>& GameState::getEntities() {
+std::map<int, GeneralEntity>& Pong::getEntities() {
     return entities;
 }
 
-std::map<int, EngineFrame>& GameState::getEngineFrames() {
+std::map<int, EngineFrame>& Pong::getEngineFrames() {
     return engineFrames;
 }
 
-void GameState::registerComponents()
+void Pong::registerComponents()
 {
     registry.register_component<Position>();
     registry.register_component<Velocity>();
@@ -43,12 +44,12 @@ void GameState::registerComponents()
     registry.register_component<Projectile>();
 }
 
-void GameState::addPlayerAction(int playerId, int actionId) {
+void Pong::addPlayerAction(int playerId, int actionId) {
     std::lock_guard<std::mutex> lock(playerActionsMutex);
     playerActions.emplace_back(playerId, actionId);
 }
 
-void GameState::processPlayerActions(EngineFrame &frame) {
+void Pong::processPlayerActions(EngineFrame &frame) {
     for (auto& action : playerActions) {
         int playerId = action.getId();
         int actionId = action.getActionId();
@@ -72,18 +73,18 @@ void GameState::processPlayerActions(EngineFrame &frame) {
     deletePlayerAction();
 }
 
-void GameState::deletePlayerAction() {
+void Pong::deletePlayerAction() {
     playerActions.erase(
         std::remove_if(playerActions.begin(), playerActions.end(),
             [](const PlayerAction& action) { return action.getProcessed(); }),
         playerActions.end());
 }
 
-const std::vector<PlayerAction>& GameState::getPlayerActions() const {
+const std::vector<PlayerAction>& Pong::getPlayerActions() const {
     return playerActions;
 }
 
-std::pair<float, float> GameState::getEntityPosition(int entityId) const
+std::pair<float, float> Pong::getEntityPosition(int entityId) const
 {
     auto it = entities.find(entityId);
     if (it == entities.end()) {
@@ -94,7 +95,7 @@ std::pair<float, float> GameState::getEntityPosition(int entityId) const
     return {positionComponent->x, positionComponent->y};
 }
 
-void GameState::spawnEntity(GeneralEntity::EntityType type, float x, float y, EngineFrame &frame) {
+void Pong::spawnEntity(GeneralEntity::EntityType type, float x, float y, EngineFrame &frame) {
     int entityId = id_to_set;
     if (type == GeneralEntity::EntityType::Bullet) {
         x += 50.0f;
@@ -132,7 +133,7 @@ void GameState::spawnEntity(GeneralEntity::EntityType type, float x, float y, En
     id_to_set++;
 }
 
-void GameState::killEntity(int entityId, EngineFrame &frame)
+void Pong::killEntity(int entityId, EngineFrame &frame)
 {
     auto it = entities.find(entityId);
     if (it != entities.end()) {
@@ -144,7 +145,7 @@ void GameState::killEntity(int entityId, EngineFrame &frame)
     }
 }
 
-void GameState::moveBullets(EngineFrame &frame) {
+void Pong::moveBullets(EngineFrame &frame) {
     const float maxX = 1500;
     const float bulletSpeed = 3.0f;
 
@@ -162,7 +163,7 @@ void GameState::moveBullets(EngineFrame &frame) {
     }
 }
 
-void GameState::moveEnemyBullets(EngineFrame &frame) {
+void Pong::moveEnemyBullets(EngineFrame &frame) {
     const float minX = 0.0f;
     const float bulletSpeed = -3.0f;
 
@@ -180,7 +181,7 @@ void GameState::moveEnemyBullets(EngineFrame &frame) {
     }
 }
 
-void GameState::checkCollisions(GeneralEntity::EntityType typeA, GeneralEntity::EntityType typeB, float thresholdX, float thresholdY, EngineFrame &frame) {
+void Pong::checkCollisions(GeneralEntity::EntityType typeA, GeneralEntity::EntityType typeB, float thresholdX, float thresholdY, EngineFrame &frame) {
     auto tempEntities = entities; // Copy to avoid iterator invalidation
 
     for (auto& [idA, entityA] : tempEntities) {
@@ -209,7 +210,7 @@ void GameState::checkCollisions(GeneralEntity::EntityType typeA, GeneralEntity::
     }
 }
 
-void GameState::moveEnemies(EngineFrame &frame) {
+void Pong::moveEnemies(EngineFrame &frame) {
     static int direction = 0;
     static float distanceMoved = 0.0f;
     const float moveDistance = 2.0f;
@@ -250,7 +251,7 @@ void GameState::moveEnemies(EngineFrame &frame) {
     }
 }
 
-void GameState::moveBoss(EngineFrame &frame) {
+void Pong::moveBoss(EngineFrame &frame) {
     static int direction = 0;
     static float distanceMoved = 0.0f;
     const float moveDistance = 2.0f;
@@ -292,7 +293,7 @@ void GameState::moveBoss(EngineFrame &frame) {
     }
 }
 
-void GameState::initializeplayers(int numPlayers, EngineFrame &frame) {
+void Pong::initializeplayers(int numPlayers, EngineFrame &frame) {
     for (int i = playerSpawned; i < numPlayers; ++i) {
         spawnEntity(GeneralEntity::EntityType::Player, 100.0f * (i + 1.0f), 100.0f, frame);
         frame.frameInfos += m_server->createPacket(Network::PacketType::CREATE_BACKGROUND, "-100;O;O/"); // Check if background is created
@@ -301,14 +302,14 @@ void GameState::initializeplayers(int numPlayers, EngineFrame &frame) {
     }
 }
 
-void GameState::CheckWinCondition(EngineFrame &frame) {
+void Pong::CheckWinCondition(EngineFrame &frame) {
     if (currentWave == numberOfWaves && currentBoss == numberOfBoss && areEnemiesCleared() && areBossCleared()) {
         frame.frameInfos += m_server->createPacket(Network::PacketType::WIN, "-1;-1;-1/");
     }
 }
 
 
-void GameState::update(EngineFrame &frame) {
+void Pong::update(EngineFrame &frame) {
     registry.run_systems();
     initializeplayers(m_server->getClients().size(), frame);
     processPlayerActions(frame);
@@ -330,7 +331,7 @@ void GameState::update(EngineFrame &frame) {
     CheckWinCondition(frame);
 }
 
-void GameState::run(int numPlayers) {
+void Pong::run(int numPlayers) {
     int frameId = 0;
     int last_frame_sent = 0;
 
@@ -347,7 +348,7 @@ void GameState::run(int numPlayers) {
 }
 
 
-void GameState::handlePlayerMove(int playerId, int actionId) {
+void Pong::handlePlayerMove(int playerId, int actionId) {
     float moveDistance = 3.0f;
     float x = 0.0f;
     float y = 0.0f;
@@ -369,35 +370,35 @@ void GameState::handlePlayerMove(int playerId, int actionId) {
     }
 }
 
-int GameState::countPlayers() const {
+int Pong::countPlayers() const {
     return std::count_if(entities.begin(), entities.end(), [](const auto& pair) {
         return pair.second.getType() == GeneralEntity::EntityType::Player;
     });
 }
 
-int GameState::countEnemyBullets() const {
+int Pong::countEnemyBullets() const {
     return std::count_if(entities.begin(), entities.end(), [](const auto& pair) {
         return pair.second.getType() == GeneralEntity::EntityType::EnemyBullet;
     });
 }
 
-bool GameState::areEnemiesCleared() const {
+bool Pong::areEnemiesCleared() const {
     return std::none_of(entities.begin(), entities.end(), [](const auto& pair) {
         return pair.second.getType() == GeneralEntity::EntityType::Enemy;
     });
 }
 
-bool GameState::areBossCleared() const {
+bool Pong::areBossCleared() const {
     return std::none_of(entities.begin(), entities.end(), [](const auto& pair) {
         return pair.second.getType() == GeneralEntity::EntityType::Boss;
     });
 }
 
-float GameState::randomFloat(float min, float max) {
+float Pong::randomFloat(float min, float max) {
     return min + static_cast<float>(std::rand()) / (RAND_MAX / (max - min));
 }
 
-void GameState::spawnEnemiesRandomly(EngineFrame &frame) {
+void Pong::spawnEnemiesRandomly(EngineFrame &frame) {
     for (int i = 0; i < enemiesPerWave; ++i) {
 
         float x = randomFloat(1280 - 300, 1280 - 50);
@@ -408,7 +409,7 @@ void GameState::spawnEnemiesRandomly(EngineFrame &frame) {
     currentWave++;
 }
 
-void GameState::spawnBossRandomly(EngineFrame &frame) {
+void Pong::spawnBossRandomly(EngineFrame &frame) {
     for (int i = 0; i < numberOfBoss; ++i) {
 
         float x = randomFloat(1280 - 300, 1280 - 100);
@@ -420,10 +421,10 @@ void GameState::spawnBossRandomly(EngineFrame &frame) {
 }
 
 
-size_t GameState::getEntityCount() const {
+size_t Pong::getEntityCount() const {
     return entities.size();
 }
 
 extern "C" AGame* create_game(void* server) {
-    return new GameState(static_cast<RType::Server*>(server));
+    return new Pong(static_cast<RType::Server*>(server));
 }
