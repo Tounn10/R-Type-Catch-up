@@ -87,7 +87,5 @@ int GeneralEntity::getNumberOfLives() const {
 }
 
 void GeneralEntity::setNumberOfLives(int newNumberOfLives) {
-    std::cout << "Entity " << entity << " lives: " << this->numberOfLives << std::endl;
-    std::cout << "Setting lives to " << newNumberOfLives << std::endl;
     this->numberOfLives = newNumberOfLives;
 }

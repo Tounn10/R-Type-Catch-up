@@ -48,5 +48,6 @@ namespace Network {
         LATENCY_CHECK = 32,
         IMPORTANT_PACKET = 33,
         IMPORTANT_PACKET_RECEIVED = 34,
+        WIN = 35,
     };
 }

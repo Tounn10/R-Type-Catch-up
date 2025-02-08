@@ -96,7 +96,6 @@ void RType::Client::createSprite(Frame& frame) {
             auto spriteIt = std::find_if(sprites_.begin(), sprites_.end(), [&](const SpriteElement& sprite) {
                 return sprite.id == packet.server_id;
             });
-
             if (spriteIt == sprites_.end()) {
                 SpriteElement spriteElement;
                 spriteElement.sprite.setTexture(textures_[it->second]);
@@ -151,6 +150,14 @@ void RType::Client::UpdateGameStateLayers() {
     gameStatePacket.action = -1;
 }
 
+void RType::Client::checkWinCondition(Frame& frame) {
+    for (auto& packet : frame.entityPackets) {
+        if (packet.action == 35) {
+            winGame = true;
+        }
+    }
+}
+
 void RType::Client::loadTextures() //make sure to have the right textures in the right folder
 {
     textures_[RType::SpriteType::Enemy].loadFromFile("../assets/enemy.png");
@@ -169,6 +176,8 @@ void RType::Client::drawSprites(sf::RenderWindow& window)
     }
     window.draw(latencyText);
     window.draw(packetLossText);
+    if (winGame)
+        window.draw(winText);
 }
 
 void RType::Client::parseMessage(std::string packet_data)
@@ -318,6 +327,11 @@ void RType::Client::LoadFont()
     latencyText.setCharacterSize(24);
     latencyText.setFillColor(sf::Color::White);
     latencyText.setPosition(10, 10);
+    winText.setFont(font);
+    winText.setCharacterSize(50);
+    winText.setFillColor(sf::Color::White);
+    winText.setPosition(600, 300);
+    winText.setString("You Win !");
 }
 
 void RType::Client::updatePacketLoss() {
@@ -363,6 +377,7 @@ int RType::Client::main_loop()
                 createSprite(currentFrame);
                 destroySprite(currentFrame);
                 updateSpritePosition(currentFrame);
+                checkWinCondition(currentFrame);
                 currentFrameIndex++;
             }
             this->window.clear();

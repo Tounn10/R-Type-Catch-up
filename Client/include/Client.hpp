@@ -59,7 +59,7 @@ namespace RType {
     class SpriteElement {
     public:
         sf::Sprite sprite;
-        int id;
+        int id = -1;
     };
 
     class Client {
@@ -87,6 +87,7 @@ namespace RType {
         void parseFramePacket(const std::string& packet_data);
         void parseGameStatePacket(const std::string& packet_data);
         void destroySprite(Frame &frame);
+        void checkWinCondition(Frame& frame);
         void processEvents(sf::RenderWindow& window);
         void initLobbySprites(sf::RenderWindow& window);
         void LoadSound();
@@ -115,6 +116,7 @@ namespace RType {
         int packetLossCount = 0;
         int currentFrameIndex = -1;
         int last_received_frame_id = -1;
+        bool winGame = false;
         const sf::Time frameDuration = sf::milliseconds(10);
         const sf::Time packetLossDuration = sf::seconds(10);
         sf::SoundBuffer buffer_background_;
@@ -124,6 +126,7 @@ namespace RType {
         sf::Font font;
         sf::Text latencyText;
         sf::Text packetLossText;
+        sf::Text winText;
         boost::asio::steady_timer send_timer_;
         std::queue<std::string> send_queue_;
     };

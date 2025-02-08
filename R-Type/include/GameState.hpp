@@ -46,6 +46,7 @@ class GameState : public AGame {
         void moveEnemyBullets(EngineFrame &frame);
         void moveBoss(EngineFrame &frame);
         void checkCollisions(GeneralEntity::EntityType typeA, GeneralEntity::EntityType typeB, float thresholdX, float thresholdY, EngineFrame &frame);
+        void CheckWinCondition(EngineFrame &frame);
 
         //GameState methods
         void spawnEnemiesRandomly(EngineFrame &frame);
@@ -53,6 +54,7 @@ class GameState : public AGame {
         void initializeplayers(int numPlayers, EngineFrame &frame);
         void handlePlayerMove(int playerId, int actionId);
         bool areEnemiesCleared() const;
+        bool areBossCleared() const;
         int countPlayers() const;
         int countEnemyBullets() const;
 
@@ -74,6 +76,7 @@ class GameState : public AGame {
     std::chrono::steady_clock::time_point lastSpawnTime;
     sf::Clock frameClock;
     const sf::Time frameDuration = sf::milliseconds(10);
+    int playerSpawned = 0;
     int currentWave = 0;
     int currentBoss = 0;
     int enemiesPerWave = 5;

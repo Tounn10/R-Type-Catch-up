@@ -283,7 +283,7 @@ void GameState::moveBoss(EngineFrame &frame) {
                     distanceMoved = 0.0f;
                 }
 
-                if (countEnemyBullets() < (maxEnemyBullets + 5) && rand() % 100 < 1.0) {
+                if (countEnemyBullets() < (maxEnemyBullets + 5) && rand() % 100 < 0.0) {
                     auto [x, y] = getEntityPosition(id);
                     spawnEntity(GeneralEntity::EntityType::EnemyBullet, x - 50.0f, y - 25.0f, frame);
                 }
@@ -293,12 +293,20 @@ void GameState::moveBoss(EngineFrame &frame) {
 }
 
 void GameState::initializeplayers(int numPlayers, EngineFrame &frame) {
-    for (int i = countPlayers(); i < numPlayers; ++i) {
+    for (int i = playerSpawned; i < numPlayers; ++i) {
         spawnEntity(GeneralEntity::EntityType::Player, 100.0f * (i + 1.0f), 100.0f, frame);
         frame.frameInfos += m_server->createPacket(Network::PacketType::CREATE_BACKGROUND, "-100;O;O/"); // Check if background is created
         frame.frameInfos += m_server->createPacket(Network::PacketType::IMPORTANT_PACKET, "-1;-1;-1/");
+        playerSpawned++;
     }
 }
+
+void GameState::CheckWinCondition(EngineFrame &frame) {
+    if (currentWave == numberOfWaves && currentBoss == numberOfBoss && areEnemiesCleared() && areBossCleared()) {
+        frame.frameInfos += m_server->createPacket(Network::PacketType::WIN, "-1;-1;-1/");
+    }
+}
+
 
 void GameState::update(EngineFrame &frame) {
     registry.run_systems();
@@ -312,14 +320,14 @@ void GameState::update(EngineFrame &frame) {
             spawnBossRandomly(frame);
         }
     }
-    moveBullets(frame);
     checkCollisions(GeneralEntity::EntityType::Bullet, GeneralEntity::EntityType::Enemy, 20.0f, 40.0f, frame);
+    moveBullets(frame);
     moveEnemies(frame);
-    moveEnemyBullets(frame);
     checkCollisions(GeneralEntity::EntityType::EnemyBullet, GeneralEntity::EntityType::Player, 30.0f, 50.0f, frame);
-    moveBoss(frame);
+    moveEnemyBullets(frame);
     checkCollisions(GeneralEntity::EntityType::Bullet, GeneralEntity::EntityType::Boss, 50.0f, 50.0f, frame);
-    //Handle lose condition if player got hit
+    moveBoss(frame);
+    CheckWinCondition(frame);
 }
 
 void GameState::run(int numPlayers) {
@@ -376,6 +384,12 @@ int GameState::countEnemyBullets() const {
 bool GameState::areEnemiesCleared() const {
     return std::none_of(entities.begin(), entities.end(), [](const auto& pair) {
         return pair.second.getType() == GeneralEntity::EntityType::Enemy;
+    });
+}
+
+bool GameState::areBossCleared() const {
+    return std::none_of(entities.begin(), entities.end(), [](const auto& pair) {
+        return pair.second.getType() == GeneralEntity::EntityType::Boss;
     });
 }
 
