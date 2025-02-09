@@ -141,7 +141,6 @@ void PacketHandler::handlePlayerJoin(const Network::Packet &packet)
 void PacketHandler::handlePlayerShoot(const Network::Packet &packet)
 {
     handlePlayerAction(packet, 5);
-    std::cerr << "[PacketHandler] Handled PLAYER_SHOOT packet." << std::endl;
 }
 
 void PacketHandler::handlePlayerHit(const Network::Packet &packet)
@@ -200,25 +199,21 @@ void PacketHandler::handleGameEnd(const Network::Packet &packet)
 
 void PacketHandler::handlePlayerRight(const Network::Packet &packet)
 {
-    std::cout << "[PacketHandler] Handeled PLAYER_RIGHT packet." << std::endl;
     handlePlayerAction(packet, 2);
 }
 
 void PacketHandler::handlePlayerLeft(const Network::Packet &packet)
 {
-    std::cout << "[PacketHandler] Handeled PLAYER_LEFT packet." << std::endl;
     handlePlayerAction(packet, 1);
 }
 
 void PacketHandler::handlePlayerUp(const Network::Packet &packet)
 {
-    std::cout << "[PacketHandler] Handled PLAYER_UP packet." << std::endl;
     handlePlayerAction(packet, 3);
 }
 
 void PacketHandler::handlePlayerDown(const Network::Packet &packet)
 {
-    std::cout << "[PacketHandler] Handeled PLAYER_DOWN packet." << std::endl;
     handlePlayerAction(packet, 4);
 }
 
@@ -236,7 +231,6 @@ void PacketHandler::handlePlayerAction(const Network::Packet &packet, int action
             return;
         }
     }
-    std::cout << "[PacketHandler] Handling player action: " << action << std::endl;
     const auto& clients = m_server.getClients();
     const udp::endpoint& clientEndpoint = m_server.getRemoteEndpoint();
 

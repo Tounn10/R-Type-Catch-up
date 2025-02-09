@@ -6,6 +6,7 @@
 #include "PlayerAction.hpp"
 #include "EngineFrame.hpp"
 #include "GeneralEntity.hpp"
+#include "ClientRegister.hpp"
 #include <SFML/Graphics.hpp>
 #include <SFML/System.hpp>
 #include <mutex>
@@ -54,6 +55,9 @@ class GameState : public AGame {
         void spawnBossRandomly(EngineFrame &frame);
         void initializeplayers(int numPlayers, EngineFrame &frame);
         void handlePlayerMove(int playerId, int actionId);
+        void checkForDisconnectedPlayers(EngineFrame &frame);
+        void removePlayerEntity(uint32_t disconnectedClientId, EngineFrame &frame);
+        void handlePlayerShoot(int PlayerId, EngineFrame &frame);
         bool areEnemiesCleared() const;
         bool areBossCleared() const;
         int countPlayers() const;
@@ -73,6 +77,8 @@ class GameState : public AGame {
     std::mutex playerActionsMutex;
 
     //GameState Variables
+    std::map<uint32_t, ClientRegister> previousClients;
+    std::unordered_map<uint32_t, uint32_t> clientToEntity;
     std::mt19937 rng;
     std::chrono::steady_clock::time_point lastSpawnTime;
     sf::Clock frameClock;

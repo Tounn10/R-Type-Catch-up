@@ -101,8 +101,6 @@ void RType::Client::createSprite(Frame& frame) {
                 spriteElement.sprite.setPosition(packet.new_x, packet.new_y);
                 spriteElement.id = packet.server_id;
                 sprites_.push_back(spriteElement);
-            } else {
-                std::cout << "Sprite with Server ID: " << packet.server_id << " already exists." << std::endl;
             }
         }
     }
@@ -471,12 +469,10 @@ void RType::Client::handleKeyPress(sf::Keyboard::Key key, sf::RenderWindow& wind
             break;
 
         case sf::Keyboard::M:
-            std::cout << "[DEBUG] Sending M: " << std::endl;
             send_queue_.push(createPacket(Network::PacketType::OPEN_MENU));
             break;
 
         case sf::Keyboard::Space:
-            std::cout << "[DEBUG] Sending Space: " << std::endl;
             send_queue_.push(createPacket(Network::PacketType::PLAYER_SHOOT));
             break;
 

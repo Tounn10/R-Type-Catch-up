@@ -58,14 +58,7 @@ void GameState::processPlayerActions(EngineFrame &frame) {
             handlePlayerMove(playerId, actionId);
             action.setProcessed(true);
         } else if (actionId == 5) {
-            std::map<int, GeneralEntity> temp_entities = entities;
-            for (const auto& [id, entity] : temp_entities) {
-                if (entity.getType() == GeneralEntity::EntityType::Player && id == playerId) {
-                    auto[x, y] = getEntityPosition(id);
-                    spawnEntity(GeneralEntity::EntityType::Bullet, x, y, frame);
-                    break;
-                }
-            }
+            handlePlayerShoot(playerId, frame);
             action.setProcessed(true);
         }
     }
@@ -110,6 +103,7 @@ void GameState::spawnEntity(GeneralEntity::EntityType type, float x, float y, En
     switch (type) {
     case GeneralEntity::EntityType::Player:
         packetType = Network::PacketType::CREATE_PLAYER;
+        clientToEntity[playerSpawned] = entityId;
         break;
     case GeneralEntity::EntityType::Enemy:
         packetType = Network::PacketType::CREATE_ENEMY;
@@ -295,9 +289,8 @@ void GameState::moveBoss(EngineFrame &frame) {
 
 void GameState::initializeplayers(int numPlayers, EngineFrame &frame) {
     for (int i = playerSpawned; i < numPlayers; ++i) {
+        frame.frameInfos += m_server->createPacket(Network::PacketType::CREATE_BACKGROUND, "-100;0;0/");
         spawnEntity(GeneralEntity::EntityType::Player, 100.0f * (i + 1.0f), 100.0f, frame);
-        frame.frameInfos += m_server->createPacket(Network::PacketType::CREATE_BACKGROUND, "-100;O;O/");
-        frame.frameInfos += m_server->createPacket(Network::PacketType::IMPORTANT_PACKET, "-1;-1;-1/");
         playerSpawned++;
     }
 }
@@ -308,11 +301,45 @@ void GameState::CheckWinCondition(EngineFrame &frame) {
     }
 }
 
+void GameState::checkForDisconnectedPlayers(EngineFrame &frame) {
+    if (m_server->getClients().size() >= previousClients.size()) {
+        previousClients = m_server->getClients();
+        return;
+    }
+
+    std::map<uint32_t, ClientRegister> currentClients = m_server->getClients();
+    std::vector<uint32_t> disconnectedClients;
+
+    for (const auto& [clientId, client] : previousClients) {
+        if (currentClients.find(clientId) == currentClients.end()) {
+            disconnectedClients.push_back(clientId);
+        }
+    }
+
+    for (uint32_t clientId : disconnectedClients) {
+        removePlayerEntity(clientId, frame);
+    }
+
+    disconnectedClients.clear();
+    previousClients = currentClients;
+}
+
+void GameState::removePlayerEntity(uint32_t disconnectedClientId, EngineFrame &frame) {
+    auto it = clientToEntity.find(disconnectedClientId);
+    if (it != clientToEntity.end()) {
+        uint32_t entityId = it->second;
+        killEntity(entityId, frame);
+        clientToEntity.erase(it);
+    } else {
+        std::cerr << "[ERROR] No entity found for disconnected Client ID " << disconnectedClientId << ".\n";
+    }
+}
 
 void GameState::update(EngineFrame &frame) {
     registry.run_systems();
     initializeplayers(m_server->getClients().size(), frame);
     processPlayerActions(frame);
+    checkForDisconnectedPlayers(frame);
 
     if (areEnemiesCleared()) {
         if (currentWave < numberOfWaves) {
@@ -347,6 +374,20 @@ void GameState::run(int numPlayers) {
     }
 }
 
+void GameState::handlePlayerShoot(int PlayerId, EngineFrame &frame) {
+    auto it = clientToEntity.find(PlayerId);
+    if (it != clientToEntity.end()) {
+        uint32_t entityId = it->second;
+        auto entityIt = entities.find(entityId);
+
+        if (entityIt != entities.end()) {
+            auto[x, y] = getEntityPosition(entityId);
+            spawnEntity(GeneralEntity::EntityType::Bullet, x, y, frame);
+            return;
+        }
+    }
+    std::cerr << "[ERROR] No entity found for shooting (Client ID: " << PlayerId << ").\n";
+}
 
 void GameState::handlePlayerMove(int playerId, int actionId) {
     float moveDistance = 3.0f;
@@ -362,12 +403,17 @@ void GameState::handlePlayerMove(int playerId, int actionId) {
     } else if (actionId == 4) { // Down
         y = moveDistance;
     }
-    auto it = entities.find(playerId);
-    if (it != entities.end()) {
-        it->second.move(x, y);
-    } else {
-        std::cerr << "[ERROR] Player ID " << playerId << " not found." << std::endl;
+
+    auto it = clientToEntity.find(playerId);
+    if (it != clientToEntity.end()) {
+        uint32_t entityId = it->second;
+        auto entityIt = entities.find(entityId);
+        if (entityIt != entities.end()) {
+            entityIt->second.move(x, y);
+            return;
+        }
     }
+    std::cerr << "[ERROR] Player ID " << playerId << " not found." << std::endl;
 }
 
 int GameState::countPlayers() const {
