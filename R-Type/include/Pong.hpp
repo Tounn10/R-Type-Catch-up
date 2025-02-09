@@ -86,6 +86,7 @@ class Pong : public AGame {
     const sf::Time frameDuration = sf::milliseconds(10);
     bool gameOver = false;
     int playerSpawned = 0;
+    int maxPlayers = 2;
     int lastPlayerHit = 1;
     int currentBalls = 0;
     int maxBalls = 1;

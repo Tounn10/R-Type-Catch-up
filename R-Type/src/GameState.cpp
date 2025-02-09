@@ -16,6 +16,7 @@
 #include <thread>
 
 GameState::GameState(RType::Server* server) : m_server(server) {
+    std::srand(static_cast<unsigned int>(std::time(0)));
     registerComponents();
 }
 

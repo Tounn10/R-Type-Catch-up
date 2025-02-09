@@ -17,6 +17,7 @@
 #include <thread>
 
 Pong::Pong(RType::Server* server) : m_server(server) {
+    std::srand(static_cast<unsigned int>(std::time(0)));
     registerComponents();
 }
 
@@ -130,16 +131,12 @@ void Pong::moveBall(EngineFrame &frame) {
     const float maxY = 720.0f;
     const float minY = 0.0f;
     const float ballSpeedX = (lastPlayerHit == 1) ? 2.0f : -2.0f;
-
-    static std::random_device rd;
-    static std::mt19937 gen(rd());
-    static std::uniform_real_distribution<float> randomY(-1.0f, 1.0f);
+    float deltaY = ((std::rand() % 2001) / 1000.0f) - 1.0f;
 
     std::map<int, GeneralEntity> temp_entities = entities;
     for (auto& [id, entity] : temp_entities) {
         if (entity.getType() == GeneralEntity::EntityType::Ball) {
             auto [x, y] = getEntityPosition(id);
-            float deltaY = randomY(gen);
             float newX = x + ballSpeedX;
             float newY = y + deltaY;
 
@@ -179,19 +176,16 @@ void Pong::checkCollisions(GeneralEntity::EntityType typeA, GeneralEntity::Entit
 }
 
 void Pong::initializeplayers(int numPlayers, EngineFrame &frame) {
-    for (int i = playerSpawned; i < numPlayers && playerSpawned < 2; ++i) {
-        frame.frameInfos += m_server->createPacket(Network::PacketType::CREATE_BACKGROUND, "-100;O;O/");
-        frame.frameInfos += m_server->createPacket(Network::PacketType::IMPORTANT_PACKET, "-1;-1;-1/");
+    for (int i = playerSpawned; i < numPlayers && playerSpawned < maxPlayers; ++i) {
+        frame.frameInfos += m_server->createPacket(Network::PacketType::CREATE_BACKGROUND, "-100;0;0/");
         if (playerSpawned == 0) {
             spawnEntity(GeneralEntity::EntityType::Player, 100.0f, 360.0f, frame);
             playerSpawned++;
-            break;
-        }
-        if (playerSpawned == 1) {
-            spawnEntity(GeneralEntity::EntityType::Player, 1180.0f, 360.0f, frame);
+        } else if (playerSpawned == 1) {
+            spawnEntity(GeneralEntity::EntityType::Player, 1100.0f, 360.0f, frame);
             playerSpawned++;
-            break;
         }
+        frame.frameInfos += m_server->createPacket(Network::PacketType::IMPORTANT_PACKET, "-1;-1;-1/");
     }
 }
 
@@ -200,7 +194,6 @@ void Pong::CheckWinCondition(EngineFrame &frame) {
         frame.frameInfos += m_server->createPacket(Network::PacketType::WIN, "-1;-1;-1/");
     }
 }
-
 
 void Pong::update(EngineFrame &frame) {
     registry.run_systems();
@@ -211,7 +204,7 @@ void Pong::update(EngineFrame &frame) {
         spawnBallRandomly(frame);
     }
 
-    checkCollisions(GeneralEntity::EntityType::Player, GeneralEntity::EntityType::Ball, 20.0f, 40.0f, frame);
+    checkCollisions(GeneralEntity::EntityType::Player, GeneralEntity::EntityType::Ball, 50.0f, 70.0f, frame);
     moveBall(frame);
     CheckWinCondition(frame);
 }
