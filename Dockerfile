@@ -17,6 +17,7 @@ RUN apt-get update && apt-get install -y \
     libxi-dev \
     libgl1-mesa-dev \
     libglu1-mesa-dev \
+    libboost-iostreams-dev \
     libudev-dev \
     libopenal-dev \
     libogg-dev \
