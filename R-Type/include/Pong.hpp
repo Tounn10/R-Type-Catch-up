@@ -49,7 +49,7 @@ class Pong : public AGame {
         //Implement generic Game Engine function to create a game from these
         void registerComponents();
         float randomFloat(float min, float max);
-        void moveBullets(EngineFrame &frame);
+        void moveBall(EngineFrame &frame);
         void moveEnemies(EngineFrame &frame);
         void moveEnemyBullets(EngineFrame &frame);
         void moveBoss(EngineFrame &frame);
@@ -57,7 +57,7 @@ class Pong : public AGame {
         void CheckWinCondition(EngineFrame &frame);
 
         //GameState methods
-        void spawnEnemiesRandomly(EngineFrame &frame);
+        void spawnBallRandomly(EngineFrame &frame);
         void spawnBossRandomly(EngineFrame &frame);
         void initializeplayers(int numPlayers, EngineFrame &frame);
         void handlePlayerMove(int playerId, int actionId);
@@ -84,13 +84,11 @@ class Pong : public AGame {
     std::chrono::steady_clock::time_point lastSpawnTime;
     sf::Clock frameClock;
     const sf::Time frameDuration = sf::milliseconds(10);
+    bool gameOver = false;
     int playerSpawned = 0;
-    int currentWave = 0;
-    int currentBoss = 0;
-    int enemiesPerWave = 5;
-    int numberOfWaves = 1;
-    int maxEnemyBullets = 5;
-    int numberOfBoss = 1;
+    int lastPlayerHit = 1;
+    int currentBalls = 0;
+    int maxBalls = 1;
 };
 
 extern "C" AGame* create_game(void* server);

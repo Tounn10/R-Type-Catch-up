@@ -295,7 +295,7 @@ void GameState::moveBoss(EngineFrame &frame) {
 void GameState::initializeplayers(int numPlayers, EngineFrame &frame) {
     for (int i = playerSpawned; i < numPlayers; ++i) {
         spawnEntity(GeneralEntity::EntityType::Player, 100.0f * (i + 1.0f), 100.0f, frame);
-        frame.frameInfos += m_server->createPacket(Network::PacketType::CREATE_BACKGROUND, "-100;O;O/"); // Check if background is created
+        frame.frameInfos += m_server->createPacket(Network::PacketType::CREATE_BACKGROUND, "-100;O;O/");
         frame.frameInfos += m_server->createPacket(Network::PacketType::IMPORTANT_PACKET, "-1;-1;-1/");
         playerSpawned++;
     }

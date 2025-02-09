@@ -34,6 +34,12 @@ void GeneralEntity::addComponents(EntityType type, float x, float y) {
         case EntityType::Bullet:
             this->registry.add_component<Projectile>(entity, {1.0f});
             this->registry.add_component<Drawable>(entity, {sf::RectangleShape(sf::Vector2f(5.0f, 5.0f))});
+            this->registry.add_component<Collidable>(entity, {true});
+            break;
+        case EntityType::Ball:
+            this->registry.add_component<Projectile>(entity, {1.0f});
+            this->registry.add_component<Drawable>(entity, {sf::RectangleShape(sf::Vector2f(5.0f, 5.0f))});
+            this->registry.add_component<Collidable>(entity, {true});
             break;
         case EntityType::Boss:
             this->registry.add_component<Velocity>(entity, {0.0f, 0.0f});
@@ -44,6 +50,7 @@ void GeneralEntity::addComponents(EntityType type, float x, float y) {
         case EntityType::EnemyBullet:
             this->registry.add_component<Projectile>(entity, {1.0f});
             this->registry.add_component<Drawable>(entity, {sf::RectangleShape(sf::Vector2f(5.0f, 5.0f))});
+            this->registry.add_component<Collidable>(entity, {true});
             break;
     }
 }

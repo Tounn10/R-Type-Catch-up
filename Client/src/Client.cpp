@@ -61,17 +61,15 @@ void RType::Client::handle_receive(const boost::system::error_code& error, std::
         parseMessage(received_data);
         start_receive();
     } else {
-        std::cerr << "[DEBUG] Error receiving: " << error.message() << std::endl;
+        std::cerr << "[ERROR] Error receiving: " << error.message() << std::endl;
         start_receive();
     }
 }
 
 void RType::Client::handle_send(const boost::system::error_code& error, std::size_t bytes_transferred)
 {
-    if (!error) {
-        // std::cout << "[DEBUG] Message sent." << std::endl;
-    } else {
-        std::cerr << "[DEBUG] Error sending: " << error.message() << std::endl;
+    if (error) {
+        std::cerr << "[ERROR] Error sending: " << error.message() << std::endl;
     }
 }
 
@@ -82,6 +80,7 @@ void RType::Client::run_receive()
 
 void RType::Client::createSprite(Frame& frame) {
     static const std::unordered_map<int, SpriteType> actionToSpriteType = {
+        {21, SpriteType::Ball},
         {22, SpriteType::Enemy},
         {23, SpriteType::Boss},
         {24, SpriteType::Player},
@@ -103,7 +102,7 @@ void RType::Client::createSprite(Frame& frame) {
                 spriteElement.id = packet.server_id;
                 sprites_.push_back(spriteElement);
             } else {
-                std::cout << "[DEBUG] Sprite with Server ID: " << packet.server_id << " already exists." << std::endl;
+                std::cout << "Sprite with Server ID: " << packet.server_id << " already exists." << std::endl;
             }
         }
     }
@@ -158,7 +157,7 @@ void RType::Client::checkWinCondition(Frame& frame) {
     }
 }
 
-void RType::Client::loadTextures() //make sure to have the right textures in the right folder
+void RType::Client::loadTextures()
 {
     textures_[RType::SpriteType::Enemy].loadFromFile("../assets/enemy.png");
     textures_[RType::SpriteType::Boss].loadFromFile("../assets/boss.png");
@@ -167,6 +166,7 @@ void RType::Client::loadTextures() //make sure to have the right textures in the
     textures_[RType::SpriteType::Background].loadFromFile("../assets/background.png");
     textures_[RType::SpriteType::Start_button].loadFromFile("../assets/start_button.png");
     textures_[RType::SpriteType::EnemyBullet].loadFromFile("../assets/enemy_bullet.png");
+    textures_[RType::SpriteType::Ball].loadFromFile("../assets/ball.png");
 }
 
 void RType::Client::drawSprites(sf::RenderWindow& window)
@@ -365,7 +365,6 @@ int RType::Client::main_loop()
             if (frameClock.getElapsedTime().asMilliseconds() > frameDuration.asMilliseconds()) {
                 std::cerr << "[WARNING] Frame took too long to process: " << frameClock.getElapsedTime().asMilliseconds() << "ms" << std::endl;
             }
-            sf::Time elapsed = frameClock.getElapsedTime() - frameDuration; // Mettre compensation pour éviter le décalage client/serveur (implementer des 2 cotés)
             frameClock.restart();
 
             if (!frameMap.empty()) {

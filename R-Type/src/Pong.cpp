@@ -57,16 +57,6 @@ void Pong::processPlayerActions(EngineFrame &frame) {
         if (actionId > 0 && actionId < 5) {
             handlePlayerMove(playerId, actionId);
             action.setProcessed(true);
-        } else if (actionId == 5) {
-            std::map<int, GeneralEntity> temp_entities = entities;
-            for (const auto& [id, entity] : temp_entities) {
-                if (entity.getType() == GeneralEntity::EntityType::Player && id == playerId) {
-                    auto[x, y] = getEntityPosition(id);
-                    spawnEntity(GeneralEntity::EntityType::Bullet, x, y, frame);
-                    break;
-                }
-            }
-            action.setProcessed(true);
         }
     }
     std::lock_guard<std::mutex> lock(playerActionsMutex);
@@ -111,17 +101,8 @@ void Pong::spawnEntity(GeneralEntity::EntityType type, float x, float y, EngineF
     case GeneralEntity::EntityType::Player:
         packetType = Network::PacketType::CREATE_PLAYER;
         break;
-    case GeneralEntity::EntityType::Enemy:
-        packetType = Network::PacketType::CREATE_ENEMY;
-        break;
-    case GeneralEntity::EntityType::Boss:
-        packetType = Network::PacketType::CREATE_BOSS;
-        break;
-    case GeneralEntity::EntityType::Bullet:
-        packetType = Network::PacketType::CREATE_BULLET;
-        break;
-    case GeneralEntity::EntityType::EnemyBullet:
-        packetType = Network::PacketType::CREATE_ENEMY_BULLET;
+    case GeneralEntity::EntityType::Ball:
+        packetType = Network::PacketType::CREATE_BALL;
         break;
     default:
         std::cerr << "Error: Unsupported entity type for spawning." << std::endl;
@@ -145,38 +126,33 @@ void Pong::killEntity(int entityId, EngineFrame &frame)
     }
 }
 
-void Pong::moveBullets(EngineFrame &frame) {
-    const float maxX = 1500;
-    const float bulletSpeed = 3.0f;
+void Pong::moveBall(EngineFrame &frame) {
+    const float maxY = 720.0f;
+    const float minY = 0.0f;
+    const float ballSpeedX = (lastPlayerHit == 1) ? 2.0f : -2.0f;
 
-    std::map <int, GeneralEntity> temp_entities = entities;
-    for (auto& [id, entity] : temp_entities) {
-        if (entity.getType() == GeneralEntity::EntityType::Bullet) {
-            auto [x, y] = getEntityPosition(id);
-            float newX = x + bulletSpeed;
-            if (newX > maxX) {
-                killEntity(id, frame);
-            } else {
-                entities.find(id)->second.move(bulletSpeed, 0.0f);
-            }
-        }
-    }
-}
-
-void Pong::moveEnemyBullets(EngineFrame &frame) {
-    const float minX = 0.0f;
-    const float bulletSpeed = -3.0f;
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
+    static std::uniform_real_distribution<float> randomY(-1.0f, 1.0f);
 
     std::map<int, GeneralEntity> temp_entities = entities;
     for (auto& [id, entity] : temp_entities) {
-        if (entity.getType() == GeneralEntity::EntityType::EnemyBullet) {
+        if (entity.getType() == GeneralEntity::EntityType::Ball) {
             auto [x, y] = getEntityPosition(id);
-            float newX = x + bulletSpeed;
-            if (newX < minX) {
-                killEntity(id, frame);
-            } else {
-                entities.find(id)->second.move(bulletSpeed, 0.0f);
+            float deltaY = randomY(gen);
+            float newX = x + ballSpeedX;
+            float newY = y + deltaY;
+
+            if (newY < minY) {
+                deltaY = minY;
+            } else if (newY > maxY) {
+                deltaY = maxY;
             }
+
+            if (newX < -50 || newX > 1330)
+                gameOver = true;
+
+            entities.find(id)->second.move(ballSpeedX, deltaY);
         }
     }
 }
@@ -194,99 +170,8 @@ void Pong::checkCollisions(GeneralEntity::EntityType typeA, GeneralEntity::Entit
             auto [posXB, posYB] = getEntityPosition(idB);
 
             if (std::abs(posXA - posXB) < thresholdX && std::abs(posYA - posYB) < thresholdY) {
-                if (entityA.getNumberOfLives() == 1) {
-                    killEntity(idA, frame);
-                } else {
-                    entities.find(idA)->second.setNumberOfLives(entityA.getNumberOfLives() - 1);
-                }
-                if (entityB.getNumberOfLives() == 1) {
-                    killEntity(idB, frame);
-                } else {
-                    entities.find(idB)->second.setNumberOfLives(entityB.getNumberOfLives() - 1);
-                }
-                return;
-            }
-        }
-    }
-}
-
-void Pong::moveEnemies(EngineFrame &frame) {
-    static int direction = 0;
-    static float distanceMoved = 0.0f;
-    const float moveDistance = 2.0f;
-    const float switchThreshold = 25.0f;
-
-    static sf::Clock moveClock;
-    const sf::Time moveInterval = sf::milliseconds(100);
-
-    if (moveClock.getElapsedTime() >= moveInterval)
-    {
-        moveClock.restart();
-        std::map<int, GeneralEntity> temp_entities = entities;
-        for (auto& [id, entity] : temp_entities) {
-            if (entity.getType() == GeneralEntity::EntityType::Enemy) {
-                float x = 0.0f, y = 0.0f;
-
-                switch (direction) {
-                case 0: y = -moveDistance; break; // Up
-                case 1: x = -moveDistance; break; // Left
-                case 2: y = moveDistance; break;  // Down
-                case 3: x = moveDistance; break;  // Right
-                }
-
-                entities.find(id)->second.move(x, y);
-                distanceMoved += moveDistance;
-
-                if (distanceMoved >= switchThreshold) {
-                    direction = (direction + 1) % 4;
-                    distanceMoved = 0.0f;
-                }
-
-                if (countEnemyBullets() < maxEnemyBullets && rand() % 100 < 0.0) {
-                    auto[x, y] = getEntityPosition(id);
-                    spawnEntity(GeneralEntity::EntityType::EnemyBullet, x - 50.0f, y - 25.0f, frame);
-                }
-            }
-        }
-    }
-}
-
-void Pong::moveBoss(EngineFrame &frame) {
-    static int direction = 0;
-    static float distanceMoved = 0.0f;
-    const float moveDistance = 2.0f;
-    const float switchThreshold = 50.0f;
-
-    static sf::Clock moveClock;
-    const sf::Time moveInterval = sf::milliseconds(100);
-
-    if (moveClock.getElapsedTime() >= moveInterval) {
-        moveClock.restart();
-
-        std::map<int, GeneralEntity> temp_entities = entities;
-        for (auto& [id, entity] : temp_entities) {
-            if (entity.getType() == GeneralEntity::EntityType::Boss) {
-                float x = 0.0f, y = 0.0f;
-
-                direction = rand() % 4;
-                switch (direction) {
-                case 0: y = -moveDistance; break; // Up
-                case 1: x = -moveDistance; break; // Left
-                case 2: y = moveDistance; break;  // Down
-                case 3: x = moveDistance; break;  // Right
-                }
-
-                entities.find(id)->second.move(x, y);
-                distanceMoved += moveDistance;
-
-                if (distanceMoved >= switchThreshold) {
-                    direction = rand() % 4;
-                    distanceMoved = 0.0f;
-                }
-
-                if (countEnemyBullets() < (maxEnemyBullets + 5) && rand() % 100 < 0.0) {
-                    auto [x, y] = getEntityPosition(id);
-                    spawnEntity(GeneralEntity::EntityType::EnemyBullet, x - 50.0f, y - 25.0f, frame);
+                if (entities.find(idA) != entities.end() && entityA.getType() == GeneralEntity::EntityType::Player) {
+                    lastPlayerHit = (idA == 0) ? 1 : 2;
                 }
             }
         }
@@ -294,16 +179,24 @@ void Pong::moveBoss(EngineFrame &frame) {
 }
 
 void Pong::initializeplayers(int numPlayers, EngineFrame &frame) {
-    for (int i = playerSpawned; i < numPlayers; ++i) {
-        spawnEntity(GeneralEntity::EntityType::Player, 100.0f * (i + 1.0f), 100.0f, frame);
-        frame.frameInfos += m_server->createPacket(Network::PacketType::CREATE_BACKGROUND, "-100;O;O/"); // Check if background is created
+    for (int i = playerSpawned; i < numPlayers && playerSpawned < 2; ++i) {
+        frame.frameInfos += m_server->createPacket(Network::PacketType::CREATE_BACKGROUND, "-100;O;O/");
         frame.frameInfos += m_server->createPacket(Network::PacketType::IMPORTANT_PACKET, "-1;-1;-1/");
-        playerSpawned++;
+        if (playerSpawned == 0) {
+            spawnEntity(GeneralEntity::EntityType::Player, 100.0f, 360.0f, frame);
+            playerSpawned++;
+            break;
+        }
+        if (playerSpawned == 1) {
+            spawnEntity(GeneralEntity::EntityType::Player, 1180.0f, 360.0f, frame);
+            playerSpawned++;
+            break;
+        }
     }
 }
 
 void Pong::CheckWinCondition(EngineFrame &frame) {
-    if (currentWave == numberOfWaves && currentBoss == numberOfBoss && areEnemiesCleared() && areBossCleared()) {
+    if (gameOver) {
         frame.frameInfos += m_server->createPacket(Network::PacketType::WIN, "-1;-1;-1/");
     }
 }
@@ -314,20 +207,12 @@ void Pong::update(EngineFrame &frame) {
     initializeplayers(m_server->getClients().size(), frame);
     processPlayerActions(frame);
 
-    if (areEnemiesCleared()) {
-        if (currentWave < numberOfWaves) {
-            spawnEnemiesRandomly(frame);
-        } else if (currentBoss < numberOfBoss) {
-            spawnBossRandomly(frame);
-        }
+    if (currentBalls < maxBalls && playerSpawned == 2) {
+        spawnBallRandomly(frame);
     }
-    checkCollisions(GeneralEntity::EntityType::Bullet, GeneralEntity::EntityType::Enemy, 20.0f, 40.0f, frame);
-    moveBullets(frame);
-    moveEnemies(frame);
-    checkCollisions(GeneralEntity::EntityType::EnemyBullet, GeneralEntity::EntityType::Player, 30.0f, 50.0f, frame);
-    moveEnemyBullets(frame);
-    checkCollisions(GeneralEntity::EntityType::Bullet, GeneralEntity::EntityType::Boss, 50.0f, 50.0f, frame);
-    moveBoss(frame);
+
+    checkCollisions(GeneralEntity::EntityType::Player, GeneralEntity::EntityType::Ball, 20.0f, 40.0f, frame);
+    moveBall(frame);
     CheckWinCondition(frame);
 }
 
@@ -347,17 +232,12 @@ void Pong::run(int numPlayers) {
     }
 }
 
-
 void Pong::handlePlayerMove(int playerId, int actionId) {
     float moveDistance = 3.0f;
     float x = 0.0f;
     float y = 0.0f;
 
-    if (actionId == 1) { // Left
-        x = -moveDistance;
-    } else if (actionId == 2) { // Right
-        x = moveDistance;
-    } else if (actionId == 3) { // Up
+    if (actionId == 3) { // Up
         y = -moveDistance;
     } else if (actionId == 4) { // Down
         y = moveDistance;
@@ -370,56 +250,20 @@ void Pong::handlePlayerMove(int playerId, int actionId) {
     }
 }
 
-int Pong::countPlayers() const {
-    return std::count_if(entities.begin(), entities.end(), [](const auto& pair) {
-        return pair.second.getType() == GeneralEntity::EntityType::Player;
-    });
-}
-
-int Pong::countEnemyBullets() const {
-    return std::count_if(entities.begin(), entities.end(), [](const auto& pair) {
-        return pair.second.getType() == GeneralEntity::EntityType::EnemyBullet;
-    });
-}
-
-bool Pong::areEnemiesCleared() const {
-    return std::none_of(entities.begin(), entities.end(), [](const auto& pair) {
-        return pair.second.getType() == GeneralEntity::EntityType::Enemy;
-    });
-}
-
-bool Pong::areBossCleared() const {
-    return std::none_of(entities.begin(), entities.end(), [](const auto& pair) {
-        return pair.second.getType() == GeneralEntity::EntityType::Boss;
-    });
-}
-
 float Pong::randomFloat(float min, float max) {
     return min + static_cast<float>(std::rand()) / (RAND_MAX / (max - min));
 }
 
-void Pong::spawnEnemiesRandomly(EngineFrame &frame) {
-    for (int i = 0; i < enemiesPerWave; ++i) {
+void Pong::spawnBallRandomly(EngineFrame &frame) {
+    for (int i = 0; i < maxBalls; ++i) {
 
-        float x = randomFloat(1280 - 300, 1280 - 50);
-        float y = randomFloat(50, 720 - 50);
+        float x = 600;
+        float y = 400;
 
-        spawnEntity(GeneralEntity::EntityType::Enemy, x, y, frame);
+        spawnEntity(GeneralEntity::EntityType::Ball, x, y, frame);
     }
-    currentWave++;
+    currentBalls++;
 }
-
-void Pong::spawnBossRandomly(EngineFrame &frame) {
-    for (int i = 0; i < numberOfBoss; ++i) {
-
-        float x = randomFloat(1280 - 300, 1280 - 100);
-        float y = randomFloat(50, 720 - 50);
-
-        spawnEntity(GeneralEntity::EntityType::Boss, x, y, frame);
-    }
-    currentBoss++;
-}
-
 
 size_t Pong::getEntityCount() const {
     return entities.size();

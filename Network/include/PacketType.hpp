@@ -34,7 +34,7 @@ namespace Network {
         PLAYER_UP = 18,
         PLAYER_DOWN = 19,
         OPEN_MENU = 20,
-        MOUSE_CLICK = 21,
+        CREATE_BALL = 21,
         CREATE_ENEMY = 22,
         CREATE_BOSS = 23,
         CREATE_PLAYER = 24,

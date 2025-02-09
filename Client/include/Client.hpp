@@ -38,7 +38,8 @@ namespace RType {
         Bullet,
         Background,
         Start_button,
-        EnemyBullet
+        EnemyBullet,
+        Ball
     };
 
     class PacketElement

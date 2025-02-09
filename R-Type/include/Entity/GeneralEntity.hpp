@@ -11,7 +11,8 @@ public:
         Enemy,
         Bullet,
         Boss,
-        EnemyBullet
+        EnemyBullet,
+        Ball
     };
 
     GeneralEntity(Registry& registry, EntityType type, float x, float y);
