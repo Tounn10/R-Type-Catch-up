@@ -6,6 +6,7 @@
 */
 
 #include "Server.hpp"
+#include "DataPacking.hpp"
 
 using boost::asio::ip::udp;
 
@@ -38,8 +39,9 @@ void RType::Server::setGameState(AGame* game) {
 
 void RType::Server::send_to_client(const std::string& message, const udp::endpoint& client_endpoint)
 {
+    std::string packed_message = DataPacking::compressData(message);
     socket_.async_send_to(
-        boost::asio::buffer(message), client_endpoint,
+        boost::asio::buffer(packed_message), client_endpoint,
         [](const boost::system::error_code& error, std::size_t bytes_transferred) {
             if (error) {
                 std::cerr << "[ERROR] Error sending to client: " << error.message() << std::endl;
@@ -86,9 +88,9 @@ void RType::Server::handle_receive(const boost::system::error_code &error, std::
 {
     if (!error || error == boost::asio::error::message_size) {
         std::string received_data(recv_buffer_.data(), bytes_transferred);
-
+        std::string unpacked_data = DataPacking::decompressData(received_data);
         Network::Packet packet;
-        packet.type = deserializePacket(received_data).type;
+        packet.type = deserializePacket(unpacked_data).type;
         packet.rawData = received_data;
         m_packetQueue.push(packet);
         start_receive();

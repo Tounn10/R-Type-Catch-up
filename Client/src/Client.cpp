@@ -6,6 +6,7 @@
 */
 
 #include "Client.hpp"
+#include "DataPacking.hpp"
 
 #include <string>
 #include <X11/Xlibint.h>
@@ -38,8 +39,9 @@ RType::Client::~Client()
 
 void RType::Client::send(const std::string& message)
 {
+    std::string packed_message = DataPacking::compressData(message);
     socket_.async_send_to(
-        boost::asio::buffer(message), server_endpoint_,
+        boost::asio::buffer(packed_message), server_endpoint_,
         boost::bind(&Client::handle_send, this,
                     boost::asio::placeholders::error,
                     boost::asio::placeholders::bytes_transferred));
@@ -58,7 +60,8 @@ void RType::Client::handle_receive(const boost::system::error_code& error, std::
 {
     if (!error || error == boost::asio::error::message_size) {
         received_data.assign(recv_buffer_.data(), bytes_transferred);
-        parseMessage(received_data);
+        std::string received_message = DataPacking::decompressData(received_data);
+        parseMessage(received_message);
         start_receive();
     } else {
         std::cerr << "[ERROR] Error receiving: " << error.message() << std::endl;

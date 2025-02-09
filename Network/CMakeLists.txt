@@ -23,6 +23,7 @@ set(NETWORK_SOURCES
 
 set(NETWORK_HEADERS
     include/PacketHandler.hpp
+    include/DataPacking.hpp
     include/Data.hpp
     include/Packet.hpp
     include/PacketType.hpp
@@ -38,5 +39,6 @@ target_include_directories(NetworkLib PUBLIC include)
 # Link dependencies
 target_link_libraries(NetworkLib
     Boost::Boost
+    Boost::iostreams
     SFML::SFML
 )
