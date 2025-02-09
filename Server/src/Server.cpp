@@ -91,7 +91,7 @@ void RType::Server::handle_receive(const boost::system::error_code &error, std::
         std::string unpacked_data = DataPacking::decompressData(received_data);
         Network::Packet packet;
         packet.type = deserializePacket(unpacked_data).type;
-        packet.rawData = received_data;
+        packet.rawData = unpacked_data;
         m_packetQueue.push(packet);
         start_receive();
     }
@@ -209,10 +209,10 @@ void RType::Server::sendAllEntitiesToNewClients(EngineFrame &frame) {
 
 void RType::Server::resendImportPackets() {
     for (auto it = unacknowledgedPackets.begin(); it != unacknowledgedPackets.end(); ++it) {
-        if (it->second.second.getElapsedTime().asMilliseconds() < 100) {
+        if (it->second.second.getElapsedTime().asMilliseconds() < 10) {
             SendFrame(it->second.first, it->first);
         } else
-            unacknowledgedPackets.erase(it);    //after 100 ms delay packet is considered as lost and will not be resent
+            unacknowledgedPackets.erase(it);    //after 10 ms delay packet is considered as lost and will not be resent
     }
 }
 
@@ -284,7 +284,7 @@ void RType::Server::PacketFactory(EngineFrame &frame)
 }
 
 void RType::Server::SendFrame(EngineFrame &frame, int frameId) {
-    if (frame.frameInfos.find("33;") != std::string::npos)
+    if (frame.frameInfos.find("33;-1;-1;-1/") != std::string::npos)
         unacknowledgedPackets.emplace(frameId, std::make_pair(frame, sf::Clock()));
     Broadcast(frame.frameInfos);
 }

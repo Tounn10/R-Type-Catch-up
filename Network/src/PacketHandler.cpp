@@ -77,6 +77,7 @@ void PacketHandler::handlePacket(const Network::Packet &packet) {
 void PacketHandler::handleImportantPacketReceived(const Network::Packet &packet)
 {
     std::lock_guard<std::mutex> lock(m_mutex);
+    std::lock_guard<std::mutex> server_guard(m_server.server_mutex);
     size_t delimiterPos = packet.rawData.find(';');
     if (delimiterPos != std::string::npos)
     {

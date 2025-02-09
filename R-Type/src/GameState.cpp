@@ -302,6 +302,7 @@ void GameState::CheckWinCondition(EngineFrame &frame) {
 }
 
 void GameState::checkForDisconnectedPlayers(EngineFrame &frame) {
+    std::lock_guard<std::mutex> lock(m_server->clients_mutex_);
     if (m_server->getClients().size() >= previousClients.size()) {
         previousClients = m_server->getClients();
         return;

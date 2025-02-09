@@ -257,6 +257,12 @@ void RType::Client::parseFramePacket(const std::string& packet_data)
     mutex_last_received_frame_id.unlock();
     mutex_frameMap.lock();
     frameMap.emplace(new_frame.frameId, new_frame);
+    auto it = frameMap.find(frame_id);
+    if (it != frameMap.end()) {
+        mutex_frameMap.unlock();
+        return;
+    }
+    frameMap.emplace(new_frame.frameId, new_frame);
     mutex_frameMap.unlock();
 }
 
