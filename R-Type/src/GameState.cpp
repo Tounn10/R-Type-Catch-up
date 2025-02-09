@@ -236,7 +236,7 @@ void GameState::moveEnemies(EngineFrame &frame) {
                     distanceMoved = 0.0f;
                 }
 
-                if (countEnemyBullets() < maxEnemyBullets && rand() % 100 < 0.0) {
+                if (countEnemyBullets() < maxEnemyBullets && rand() % 100 < 1.0) {
                     auto[x, y] = getEntityPosition(id);
                     spawnEntity(GeneralEntity::EntityType::EnemyBullet, x - 50.0f, y - 25.0f, frame);
                 }
@@ -278,7 +278,7 @@ void GameState::moveBoss(EngineFrame &frame) {
                     distanceMoved = 0.0f;
                 }
 
-                if (countEnemyBullets() < (maxEnemyBullets + 5) && rand() % 100 < 0.0) {
+                if (countEnemyBullets() < (maxEnemyBullets + 5) && rand() % 100 < 3.0) {
                     auto [x, y] = getEntityPosition(id);
                     spawnEntity(GeneralEntity::EntityType::EnemyBullet, x - 50.0f, y - 25.0f, frame);
                 }

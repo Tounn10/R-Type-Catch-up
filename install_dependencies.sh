@@ -37,7 +37,4 @@ sudo apt install -y g++
 # Install CMake
 sudo apt install -y cmake
 
-# Provide a link to Docker installation manual
-echo "For Docker installation, please refer to: https://docs.docker.com/engine/install/"
-
 echo "Dependencies installed successfully."

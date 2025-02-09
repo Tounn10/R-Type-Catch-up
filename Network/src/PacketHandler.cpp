@@ -80,8 +80,14 @@ void PacketHandler::handleImportantPacketReceived(const Network::Packet &packet)
     size_t delimiterPos = packet.rawData.find(';');
     if (delimiterPos != std::string::npos)
     {
-        int frameId = std::stoi(packet.rawData.substr(delimiterPos + 1));
-        m_server.unacknowledgedPackets.erase(frameId);
+        try {
+            int frameId = std::stoi(packet.rawData.substr(delimiterPos + 1));
+            m_server.unacknowledgedPackets.erase(frameId);
+        } catch (const std::invalid_argument& e) {
+            std::cerr << "[ERROR] Invalid argument in packet data: " << e.what() << std::endl;
+        } catch (const std::out_of_range& e) {
+            std::cerr << "[ERROR] Out of range error: " << e.what() << std::endl;
+        }
     }
 }
 
